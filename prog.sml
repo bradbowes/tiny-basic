@@ -26,8 +26,8 @@ struct
 
    fun goto (prog, ln) =
       case prog of
-           []           => raise (Fail "Line doesn't exist")
-         | (l, _)::xs   => if l > ln then raise (Fail "Line doesn't exist")
-                           else if l = ln then prog
+           []           => raise Basic.NoLine
+         | (l, _)::xs   => if l > ln then raise Basic.NoLine
+                           else if l = ln then map #2 prog
                            else goto (xs, ln)
 end

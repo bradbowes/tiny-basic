@@ -1,10 +1,7 @@
-signature SCANNER =
-sig
+structure Scanner : sig
    val make_file_scanner : string -> int -> Token.token * int
    val make_scanner : string -> int -> Token.token * int
-end
-
-structure Scanner :> SCANNER =
+end =
 struct
    open Token
    fun make_scanner s =

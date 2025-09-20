@@ -7,5 +7,6 @@ token.sml
 scanner.sml
 ast.sml
 parser.sml
+repl.sml
 test.sml
 mlton.sml

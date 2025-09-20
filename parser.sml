@@ -146,6 +146,7 @@ struct
             case t of
                  Token.PRINT     => print_stm (scan c)
                | Token.EOL       => (Ast.NUL, c)
+               | Token.EOF       => (Ast.NUL, c)
                | Token.IF        => if_stm (scan c)
                | Token.GOTO      => go Ast.GOTO (scan c)
                | Token.GOSUB     => go Ast.GOSUB (scan c)
@@ -160,9 +161,9 @@ struct
                | Token.RUN       => (Ast.RUN, c)
                | _               => raise (Basic.Syntax "expected statement")
 
-         and if_stm (tok, n) =
+         and if_stm (t, c) =
             let
-               val (tst, c) = compare (tok, n)
+               val (tst, c) = compare (t, c)
                val (tk, c) = (scan c)
                val (stm, c) = case tk of
                                    Token.THEN   => statement (scan c)
@@ -171,16 +172,19 @@ struct
                (Ast.IF (tst, stm), c)
             end
 
+         fun line (t, c) =
+            case t of
+                 Token.NUM (n)   => let
+                                       val (s, _) = statement (scan c)
+                                    in
+                                       case s of
+                                            Ast.NUL   => Ast.DEL n
+                                          | _         => Ast.LINE (n, s)
+                                    end
+               | _               => let val (s, _) = statement (t, c) in s end
+
       in
-         let
-            val (t, c) = (scan 0)
-            val (lineno, tk) =   case t of
-                                      Token.NUM (n) => (SOME n, scan c)
-                                    | _ => (NONE, (t, c))
-            val (stm, c) = statement tk
-         in
-            (lineno, stm)
-         end
+         line (scan 0)
       end
 
 end
