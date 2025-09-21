@@ -1,6 +1,6 @@
 # SML/NJ
 echo Compiling for SML/NJ:
-ml-build basic.cm Test.main basic
+ml-build basic.cm Main.main basic
 echo Done!
 
 # Mlton

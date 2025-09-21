@@ -39,7 +39,11 @@ struct
                fun output i =
                   case i of
                        STRING (s)   => s
-                     | _            => Int.toString (eval i)
+                     | _            => let val n = eval i
+                                       in
+                                          (if n < 0 then "-" else "") ^
+                                          (Int.toString (Int.abs n))
+                                       end
             in
                print (String.concatWith " " (map output ls) ^ "\n")
             end
@@ -50,6 +54,16 @@ struct
                   print (Int.toString line ^ " " ^ toString stm ^ "\n")
             in
                app ls p
+            end
+
+         fun input ls =
+            let
+               val line = (
+                  print "? ";
+                  TextIO.inputLine TextIO.stdIn
+               )
+            in
+               raise Basic.NoImpl
             end
 
          fun exec cmd =
@@ -103,7 +117,7 @@ struct
    fun loop (s, p, e) =
       let
          val line = (
-            print "> ";
+            print "*> ";
             TextIO.inputLine TextIO.stdIn
          )
 
@@ -116,7 +130,7 @@ struct
                | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
                | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (s, p, e))
                | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (s, p, e))
-               | _                  => (print "ERROR: Unknown error.\n"; (s, p, e))
+               | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (s, p, e))
       in
          case line of
               SOME s => loop (exec s)

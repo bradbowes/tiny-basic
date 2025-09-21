@@ -1,4 +1,4 @@
-structure Test =
+structure Main =
 struct
 
    fun main _ = (

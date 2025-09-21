@@ -1,5 +1,5 @@
 Group is
-   test.sml
+   main.sml
    repl.sml
    parser.sml
    ast.sml
