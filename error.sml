@@ -5,5 +5,6 @@ struct
    exception Bug of string
    exception RetGosub
    exception NoLine
+   exception Direct
 end
 

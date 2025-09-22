@@ -48,12 +48,12 @@ struct
                print (String.concatWith " " (map output ls) ^ "\n")
             end
 
-         fun list () =
+         fun list out =
             let
-               fun ls (line, stm) =
-                  print (Int.toString line ^ " " ^ toString stm ^ "\n")
+               fun outputLine (line, stm) =
+                  TextIO.output (out, Int.toString line ^ " " ^ toString stm ^ "\n")
             in
-               app ls p
+               app outputLine p
             end
 
          fun input ls =
@@ -66,17 +66,46 @@ struct
                raise Basic.NoImpl
             end
 
+         fun load file =
+            let
+               val input = TextIO.openIn file
+
+               fun loop prog =
+                  let
+                     val line = TextIO.inputLine  input
+                  in
+                     case line of
+                       SOME s => let
+                                    val stm = Parser.parse s
+                                 in
+                                    case stm of
+                                         LINE x    => loop (Prog.insert (prog, x))
+                                       | _         => (
+                                                         TextIO.closeIn input;
+                                                         raise Basic.Direct
+                                                      )
+                                 end
+                     | NONE   => (TextIO.closeIn input; prog)
+                  end
+            in
+               loop []
+            end
+
          fun exec cmd =
             let
                val prog = case cmd of
                     LINE ln      => Prog.insert (p, ln)
                   | DEL ln       => Prog.delete (p, ln)
+                  | NEW          => []
+                  | LOAD file    => load file
                   | _            => p
 
                val env = case cmd of
                     LET (x, y)   => StrMap.insert (e, toString x, eval y)
                   | CLEAR        => StrMap.empty
                   | RUN          => StrMap.empty
+                  | NEW          => StrMap.empty
+                  | LOAD _       => StrMap.empty
                   | _            => e
 
                val cont = case cmd of
@@ -86,18 +115,25 @@ struct
                                     else hd s
                   | RUN          => map #2 p
                   | END          => []
+                  | NEW          => []
+                  | LOAD _       => []
                   | _            => tl c
 
                val stack = case cmd of
                     GOSUB _      => (tl c)::s
                   | RETURN       => tl s
+                  | NEW          => []
+                  | LOAD _       => []
+                  | END          => []
                   | _            => s
 
             in
                case cmd of
-                    PRINT (ls)   => pr ls
-                  | LIST         => list ()
-                  | INPUT x      => raise Basic.NoImpl
+                    PRINT ls     => pr ls
+                  | LIST         => list TextIO.stdOut
+                  | INPUT _      => raise Basic.NoImpl
+                  | SAVE file    => let val out = TextIO.openOut file
+                                    in list out; TextIO.closeOut out end
                   | _            => ()
                   ;
 
@@ -129,6 +165,7 @@ struct
                | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (s, p, e))
                | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
                | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (s, p, e))
+               | Basic.Direct       => (print "ERROR: Direct command in file\n"); (s, p, e))
                | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (s, p, e))
                | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (s, p, e))
       in

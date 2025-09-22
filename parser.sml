@@ -109,6 +109,11 @@ struct
                ((f target), c)
             end
 
+         fun file_stm f (file, c) =
+            case file of
+                 Token.STRING s  => ((f s), c)
+               | _               => raise (Basic.Syntax "expected string (file path)")
+
          fun let_stm (t, c) =
             case t of
                  Token.VAR (v)   =>
@@ -152,6 +157,9 @@ struct
                | Token.GOSUB     => go Ast.GOSUB (scan c)
                | Token.RETURN    => (Ast.RETURN, c)
                | Token.CLEAR     => (Ast.CLEAR, c)
+               | Token.NEW       => (Ast.NEW, c)
+               | Token.LOAD      => file_stm Ast.LOAD (scan c)
+               | Token.SAVE      => file_stm Ast.SAVE (scan c)
                | Token.END       => (Ast.END, c)
                | Token.LET       => let_stm (scan c)
                | Token.VAR _     => let_stm (t, c)

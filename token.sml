@@ -26,6 +26,9 @@ struct
       | INPUT
       | PRINT
       | CLEAR
+      | NEW
+      | LOAD
+      | SAVE
       | LIST
       | RUN
       | NUM of int

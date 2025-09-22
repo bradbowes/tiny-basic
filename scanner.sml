@@ -1,5 +1,4 @@
 structure Scanner : sig
-   val make_file_scanner : string -> int -> Token.token * int
    val make_scanner : string -> int -> Token.token * int
 end =
 struct
@@ -135,6 +134,8 @@ struct
                   | #")"   => (RPAREN, p + 1)
                   | #","   => (COMMA, p + 1)
                   | #"\""  => get_string (p + 1)
+                  | #"C"   => get_kw (CLEAR, "CLEAR", p)
+                  | #"E"   => get_kw (END, "END", p)
                   | #"G"   => if peek #"O" then
                                  if look 2 #"T" then get_kw (GOTO, "GOTO", p)
                                  else get_kw (GOSUB, "GOSUB", p)
@@ -144,9 +145,10 @@ struct
                               else  get_kw (INPUT, "INPUT", p)
                   | #"L"   => if peek #"I" then
                                  get_kw (LIST, "LIST", p)
-                              else get_kw (LET, "LET", p)
+                              else if peek #"E" then get_kw (LET, "LET", p)
+                              else get_kw (LOAD, "LOAD", p)
+                  | #"N"   => get_kw (NEW, "NEW", p)
                   | #"P"   => get_kw (PRINT, "PRINT", p)
-                  | #"C"   => get_kw (CLEAR, "CLEAR", p)
                   | #"R"   => if peek #"U" then
                                  get_kw (RUN, "RUN", p)
                               else if peek #"E"
@@ -154,22 +156,13 @@ struct
                                       andalso not (Char.isAlphaNum (get_char (p + 3))) then
                                     get_comment (p + 3)
                               else get_kw (RETURN, "RETURN", p)
+                  | #"S"   => get_kw (SAVE, "SAVE", p)
                   | #"T"   => get_kw (THEN, "THEN", p)
-                  | #"E"   => get_kw (END, "END", p)
                   | _      =>
                      if Char.isDigit ch then get_number p
                      else if Char.isAlpha ch then get_var ([Char.toUpper ch], p + 1)
                      else raise (Basic.Syntax "Illegal character")
             end
-      end
-
-   fun make_file_scanner name =
-      let
-         val file = TextIO.openIn name
-         val s = TextIO.inputAll file
-         val _ = TextIO.closeIn file
-      in
-         make_scanner s
       end
 
 end
