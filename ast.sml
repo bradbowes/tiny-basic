@@ -33,6 +33,7 @@ struct
       | LINE of int * node
       | DEL of int
       | NUL
+      | BYE
 
    fun toString a =
       let
@@ -78,6 +79,7 @@ struct
             | REM (s)      => "REM" ^ s
             | LIST         => "LIST"
             | RUN          => "RUN"
+            | BYE          => "BYE"
             | _            => ""
       end
 end

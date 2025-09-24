@@ -7,15 +7,15 @@ struct
       let
          fun eval a =
             case a of
-                 NUM (n)      => n
-               | VAR (s)      => let
+                 NUM n        => n
+               | VAR s        => let
                                     val v = StrMap.lookup (e, s)
                                  in
                                     case v of
-                                         SOME (n)  => n
-                                       | NONE      => 0
+                                         SOME n => n
+                                       | NONE   => 0
                                  end
-               | NEG (n)      => ~(eval n)
+               | NEG n        => ~ (eval n)
                | ADD (x, y)   => (eval x) + (eval y)
                | SUB (x, y)   => (eval x) - (eval y)
                | MUL (x, y)   => (eval x) * (eval y)
@@ -36,12 +36,13 @@ struct
             let
                fun output i =
                   case i of
-                       STRING (s)   => s
-                     | _            => let val n = eval i
-                                       in
-                                          (if n < 0 then "-" else "") ^
-                                          (Int.toString (Int.abs n))
-                                       end
+                       STRING s  => s
+                     | _         =>
+                           let val n = eval i
+                           in
+                              (if n < 0 then "-" else "") ^
+                              (Int.toString (Int.abs n))
+                           end
             in
                print (String.concatWith " " (map output ls) ^ "\n")
             end
@@ -62,7 +63,7 @@ struct
                in
                   "expected " ^ Int.toString len ^
                   (if plural then " comma separated" else "") ^
-                  " number" ^ (if len > 1 then "s" else "") ^
+                  " number" ^ (if plural then "s" else "") ^
                   ". Try again..."
                end
 
@@ -80,14 +81,12 @@ struct
 
                val vals = Parser.parseInput (line ())
 
-
                fun insert (env, vars, vals) =
                   case (vars, vals) of
-                       ([], [])              => env
-                     | ([], _)               => raise (Basic.Input msg)
-                     | (_::_, [])            => raise (Basic.Input msg)
-                     | ((VAR x)::xs, v::vs)  => insert (StrMap.insert (env, x, v), xs, vs)
-                     | _                     => raise (Basic.Bug "input AST variables")
+                       ([], [])        => env
+                     | ([], _)         => raise (Basic.Input msg)
+                     | (_::_, [])      => raise (Basic.Input msg)
+                     | (x::xs, v::vs)  => insert (StrMap.insert (env, toString x, v), xs, vs)
 
             in
                insert (e, vars, vals)
@@ -102,17 +101,14 @@ struct
                      val line = TextIO.inputLine  input
                   in
                      case line of
-                       SOME s => let
-                                    val stm = Parser.parse s
-                                 in
-                                    case stm of
-                                         LINE x    => loop (Prog.insert (prog, x))
-                                       | _         => (
-                                                         TextIO.closeIn input;
-                                                         raise Basic.Direct
-                                                      )
-                                 end
-                     | NONE   => (TextIO.closeIn input; prog)
+                          SOME s =>
+                              let val stm = Parser.parse s
+                              in
+                                 case stm of
+                                      LINE x => loop (Prog.insert (prog, x))
+                                    | _      => (TextIO.closeIn input; raise Basic.Direct)
+                              end
+                        | NONE   => (TextIO.closeIn input; prog)
                   end
             in
                loop []
@@ -120,14 +116,14 @@ struct
 
          fun exec cmd =
             let
-               val prog = case cmd of
+               val p' = case cmd of
                     LINE ln      => Prog.insert (p, ln)
                   | DEL ln       => Prog.delete (p, ln)
                   | NEW          => []
                   | LOAD file    => load file
                   | _            => p
 
-               val env = case cmd of
+               val e' = case cmd of
                     LET (x, y)   => StrMap.insert (e, toString x, eval y)
                   | CLEAR        => StrMap.empty
                   | RUN          => StrMap.empty
@@ -144,7 +140,7 @@ struct
                                        | e   => raise e )
                   | _            => e
 
-               val cont = case cmd of
+               val c' = case cmd of
                     GOTO x       => Prog.goto (p, eval x)
                   | GOSUB x      => Prog.goto (p, eval x)
                   | RETURN       => if null s then raise Basic.RetGosub
@@ -155,7 +151,7 @@ struct
                   | LOAD _       => []
                   | _            => tl c
 
-               val stack = case cmd of
+               val s' = case cmd of
                     GOSUB _      => (tl c)::s
                   | RETURN       => tl s
                   | NEW          => []
@@ -169,12 +165,13 @@ struct
                   | LIST         => list TextIO.stdOut
                   | SAVE file    => let val out = TextIO.openOut file
                                     in list out; TextIO.closeOut out end
+                  | BYE          => raise Basic.Quit
                   | _            => ()
                   ;
 
                case cmd of
-                    IF (x, y)    => if compare x then exec y else (cont, stack, prog, env)
-                  | _            => (cont, stack, prog, env)
+                    IF (x, y)    => if compare x then exec y else (c', s', p', e')
+                  | _            => (c', s', p', e')
 
             end
 
@@ -201,12 +198,13 @@ struct
                | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (s, p, e))
                | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
                | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (s, p, e))
-               | Basic.Direct       => (print "ERROR: Direct command in file\n"; (s, p, e))
+               | Basic.Direct       => (print "ERROR: Command in program text\n"; (s, p, e))
                | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (s, p, e))
+               | Basic.Quit         => raise Basic.Quit
                | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (s, p, e))
       in
          case line of
-              SOME s => loop (exec s)
+              SOME s => (loop (exec s) handle x => ())
             | NONE   => ()
       end
 

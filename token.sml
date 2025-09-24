@@ -34,4 +34,5 @@ struct
       | VAR of string
       | STRING of string
       | REM of string
+      | BYE
 end

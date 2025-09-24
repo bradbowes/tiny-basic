@@ -133,6 +133,7 @@ struct
                   | #")"   => (RPAREN, p + 1)
                   | #","   => (COMMA, p + 1)
                   | #"\""  => str (p + 1)
+                  | #"B"   => keyword (BYE, "BYE", p)
                   | #"C"   => keyword (CLEAR, "CLEAR", p)
                   | #"E"   => keyword (END, "END", p)
                   | #"G"   => if peek #"O" then

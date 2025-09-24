@@ -165,6 +165,7 @@ struct
                | Token.REM (s)   => (Ast.REM s, c)
                | Token.LIST      => (Ast.LIST, c)
                | Token.RUN       => (Ast.RUN, c)
+               | Token.BYE       => (Ast.BYE, c)
                | _               => raise (Basic.Syntax "expected statement")
 
          and ifStm (t, c) =
