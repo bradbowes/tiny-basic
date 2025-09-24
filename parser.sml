@@ -200,7 +200,7 @@ struct
          fun num t =
             case t of
                  Token.NUM n  => n
-               | _            => raise (Basic.Syntax "explected number")
+               | _            => raise (Basic.Input "explected number")
 
          fun value (t, c) =
             case t of

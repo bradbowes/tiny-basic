@@ -49,19 +49,48 @@ struct
          fun list out =
             let
                fun outputLine (line, stm) =
-                  TextIO.output (out, Int.toString line ^ " " ^ toString stm ^ "\n")
+                  TextIO.output (out, Int.toString line ^ " " ^ toString stm ^ "\r\n")
             in
                app outputLine p
             end
 
-         fun input ls =
+         fun input vars =
             let
-               val line = (
-                  print "? ";
-                  TextIO.inputLine TextIO.stdIn
-               )
+               val msg = let
+                  val len = length vars
+                  val plural = len > 1
+               in
+                  "expected " ^ Int.toString len ^
+                  (if plural then " comma separated" else "") ^
+                  " number" ^ (if len > 1 then "s" else "") ^
+                  ". Try again..."
+               end
+
+               fun line () =
+                  let
+                     val l = (
+                        print "? ";
+                        TextIO.inputLine TextIO.stdIn
+                     )
+                  in
+                     case l of
+                          SOME s => s
+                        | NONE   => ""
+                  end
+
+               val vals = Parser.parseInput (line ())
+
+
+               fun insert (env, vars, vals) =
+                  case (vars, vals) of
+                       ([], [])              => env
+                     | ([], _)               => raise (Basic.Input msg)
+                     | (_::_, [])            => raise (Basic.Input msg)
+                     | ((VAR x)::xs, v::vs)  => insert (StrMap.insert (env, x, v), xs, vs)
+                     | _                     => raise (Basic.Bug "input AST variables")
+
             in
-               raise Basic.NoImpl
+               insert (e, vars, vals)
             end
 
          fun load file =
@@ -104,6 +133,15 @@ struct
                   | RUN          => StrMap.empty
                   | NEW          => StrMap.empty
                   | LOAD _       => StrMap.empty
+                  | INPUT ls     => (input ls
+                                     handle
+                                         Basic.Input msg => (
+                                             print ("INPUT ERROR: " ^ msg ^ "\n");
+                                             input ls)
+                                       | Basic.Syntax msg => (
+                                             print ("INPUT ERROR: " ^ msg ^ "\n");
+                                             input ls)
+                                       | e   => raise e )
                   | _            => e
 
                val cont = case cmd of
@@ -129,7 +167,6 @@ struct
                case cmd of
                     PRINT ls     => pr ls
                   | LIST         => list TextIO.stdOut
-                  | INPUT _      => raise Basic.NoImpl
                   | SAVE file    => let val out = TextIO.openOut file
                                     in list out; TextIO.closeOut out end
                   | _            => ()
@@ -159,6 +196,7 @@ struct
             interp ([Parser.parse input], s, p, e)
             handle
                  Basic.Syntax msg   => (print ("SYNTAX ERROR: " ^ msg ^ "\n"); (s, p, e))
+               | Basic.Input msg    => (print ("INPUT ERROR: " ^ msg ^ "\n"); (s, p, e))
                | Basic.NoImpl       => (print "FEATURE NOT IMPLEMENTED\n"; (s, p, e))
                | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (s, p, e))
                | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
