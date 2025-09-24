@@ -2,7 +2,7 @@ structure Parser =
 struct
    fun parse line =
       let
-         val scan = Scanner.make_scanner line
+         val scan = Scanner.scanner line
 
          fun atom (t, c) =
             case t of
@@ -61,7 +61,7 @@ struct
                helper (product tk)
             end
 
-         fun print_stm (t, c) =
+         fun printStm (t, c) =
             let
                fun item (t, c) =
                   case t of
@@ -80,7 +80,6 @@ struct
             in
                case t of
                     Token.EOL => (Ast.PRINT [], c)
-                  | Token.EOF => (Ast.PRINT [], c)
                   | _         => let val (e, c) = item (t, c)
                                  in f ([e], c) end
             end
@@ -102,19 +101,19 @@ struct
                (node (left, right), c)
             end
 
-         fun go f tk =
+         fun goStm f tk =
             let
                val (target, c) = expression tk
             in
                ((f target), c)
             end
 
-         fun file_stm f (file, c) =
+         fun fileStm f (file, c) =
             case file of
                  Token.STRING s  => ((f s), c)
-               | _               => raise (Basic.Syntax "expected string (file path)")
+               | _               => raise (Basic.Syntax "expected string")
 
-         fun let_stm (t, c) =
+         fun letStm (t, c) =
             case t of
                  Token.VAR (v)   =>
                      let val (t, c) = (scan c)
@@ -125,7 +124,7 @@ struct
                      end
                | _               => raise (Basic.Syntax "expected variable")
 
-         fun input_stm tk =
+         fun inputStm tk =
             let
                fun var (t, c) =
                   case t of
@@ -147,34 +146,33 @@ struct
                f ([v], c)
             end
 
-         fun statement (t, c) =
+         fun stm (t, c) =
             case t of
-                 Token.PRINT     => print_stm (scan c)
+                 Token.PRINT     => printStm (scan c)
                | Token.EOL       => (Ast.NUL, c)
-               | Token.EOF       => (Ast.NUL, c)
-               | Token.IF        => if_stm (scan c)
-               | Token.GOTO      => go Ast.GOTO (scan c)
-               | Token.GOSUB     => go Ast.GOSUB (scan c)
+               | Token.IF        => ifStm (scan c)
+               | Token.GOTO      => goStm Ast.GOTO (scan c)
+               | Token.GOSUB     => goStm Ast.GOSUB (scan c)
                | Token.RETURN    => (Ast.RETURN, c)
                | Token.CLEAR     => (Ast.CLEAR, c)
                | Token.NEW       => (Ast.NEW, c)
-               | Token.LOAD      => file_stm Ast.LOAD (scan c)
-               | Token.SAVE      => file_stm Ast.SAVE (scan c)
+               | Token.LOAD      => fileStm Ast.LOAD (scan c)
+               | Token.SAVE      => fileStm Ast.SAVE (scan c)
                | Token.END       => (Ast.END, c)
-               | Token.LET       => let_stm (scan c)
-               | Token.VAR _     => let_stm (t, c)
-               | Token.INPUT     => input_stm (scan c)
+               | Token.LET       => letStm (scan c)
+               | Token.VAR _     => letStm (t, c)
+               | Token.INPUT     => inputStm (scan c)
                | Token.REM (s)   => (Ast.REM s, c)
                | Token.LIST      => (Ast.LIST, c)
                | Token.RUN       => (Ast.RUN, c)
                | _               => raise (Basic.Syntax "expected statement")
 
-         and if_stm (t, c) =
+         and ifStm (t, c) =
             let
                val (tst, c) = compare (t, c)
                val (tk, c) = (scan c)
                val (stm, c) = case tk of
-                                   Token.THEN   => statement (scan c)
+                                   Token.THEN   => stm (scan c)
                                  | _            => raise (Basic.Syntax "expected THEN")
             in
                (Ast.IF (tst, stm), c)
@@ -183,16 +181,49 @@ struct
          fun line (t, c) =
             case t of
                  Token.NUM (n)   => let
-                                       val (s, _) = statement (scan c)
+                                       val (s, _) = stm (scan c)
                                     in
                                        case s of
                                             Ast.NUL   => Ast.DEL n
                                           | _         => Ast.LINE (n, s)
                                     end
-               | _               => let val (s, _) = statement (t, c) in s end
+               | _               => let val (s, _) = stm (t, c) in s end
 
       in
          line (scan 0)
+      end
+
+   fun parseInput line =
+      let
+         val scan = Scanner.scanner line
+
+         fun num t =
+            case t of
+                 Token.NUM n  => n
+               | _            => raise (Basic.Syntax "explected number")
+
+         fun value (t, c) =
+            case t of
+                 Token.MINUS     => let
+                                       val (t, c) = (scan c)
+                                       val n = num t
+                                    in
+                                       (~ n, c)
+                                    end
+               | _               => (num t, c)
+
+         fun values (ls, tk) =
+            let
+               val (n, c) = value tk
+               val (t, c) = (scan c)
+            in
+               case t of
+                    Token.COMMA  => values (n::ls, scan c)
+                  | _            => List.rev (n::ls)
+            end
+
+      in
+         values ([], scan 0)
       end
 
 end

@@ -1,8 +1,7 @@
 structure Token =
 struct
    datatype token
-      = EOF
-      | EOL
+      = EOL
       | PLUS
       | MINUS
       | MUL

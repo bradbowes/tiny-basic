@@ -6,5 +6,7 @@ struct
    exception RetGosub
    exception NoLine
    exception Direct
+   exception Interrupt
+   exception Quit
 end
 

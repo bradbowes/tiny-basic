@@ -1,6 +1,4 @@
 structure Repl : sig
-   val interp : Ast.node list * Ast.node list list * (int * Ast.node) list * int StrMap.map
-                -> Ast.node list list * (int * Ast.node) list * int StrMap.map
    val loop : Ast.node list list * (int * Ast.node) list * int StrMap.map -> unit
 end  =
 struct
@@ -165,7 +163,7 @@ struct
                | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (s, p, e))
                | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
                | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (s, p, e))
-               | Basic.Direct       => (print "ERROR: Direct command in file\n"); (s, p, e))
+               | Basic.Direct       => (print "ERROR: Direct command in file\n"; (s, p, e))
                | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (s, p, e))
                | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (s, p, e))
       in
@@ -175,4 +173,3 @@ struct
       end
 
 end
-
