@@ -26,87 +26,87 @@ struct
                | _            => atom (t, c)
 
          and product tk =
-            let
-               fun loop (left, cont) =
-                  let
-                     val (opr, c) = (scan cont)
-                     fun build f =
-                        let val (right, c) = unary (scan c)
-                        in loop (f (left, right), c) end
-                  in
-                     case opr of
-                          Token.MUL => build Ast.MUL
-                        | Token.DIV => build Ast.DIV
-                        | _         => (left, cont)
-                  end
-            in
-               loop (unary tk)
-            end
+         let
+            fun loop (left, cont) =
+               let
+                  val (opr, c) = (scan cont)
+                  fun build f =
+                     let val (right, c) = unary (scan c)
+                     in loop (f (left, right), c) end
+               in
+                  case opr of
+                       Token.MUL => build Ast.MUL
+                     | Token.DIV => build Ast.DIV
+                     | _         => (left, cont)
+               end
+         in
+            loop (unary tk)
+         end
 
          and expression tk =
+         let
+            fun loop (left, cont) =
             let
-               fun loop (left, cont) =
-                  let
-                     val (opr, c) = (scan cont)
-                     fun build f =
-                        let val (right, c) = product (scan c)
-                        in loop (f (left, right), c) end
-                  in
-                     case opr of
-                          Token.PLUS   => build Ast.ADD
-                        | Token.MINUS  => build Ast.SUB
-                        | _            => (left, cont)
-                  end
+               val (opr, c) = (scan cont)
+               fun build f =
+                  let val (right, c) = product (scan c)
+                  in loop (f (left, right), c) end
             in
-               loop (product tk)
+               case opr of
+                    Token.PLUS   => build Ast.ADD
+                  | Token.MINUS  => build Ast.SUB
+                  | _            => (left, cont)
             end
+         in
+            loop (product tk)
+         end
 
          fun printStm (t, c) =
-            let
-               fun item (t, c) =
-                  case t of
-                       Token.STRING (s)   => (Ast.STRING s, c)
-                     | _                  => expression (t, c)
+         let
+            fun item (t, c) =
+               case t of
+                    Token.STRING (s)   => (Ast.STRING s, c)
+                  | _                  => expression (t, c)
 
-               fun f (ls, c) =
-                  let
-                     val (t, c') = (scan c)
-                  in
-                     case t of
-                          Token.COMMA  => let val (e, c) = item (scan c')
-                                          in f (e::ls, c) end
-                        | _            => (Ast.PRINT (List.rev ls), c)
-                  end
+            fun f (ls, c) =
+            let
+               val (t, c') = (scan c)
             in
                case t of
-                    Token.EOL => (Ast.PRINT [], c)
-                  | _         => let val (e, c) = item (t, c)
-                                 in f ([e], c) end
+                    Token.COMMA  => let val (e, c) = item (scan c')
+                                    in f (e::ls, c) end
+                  | _            => (Ast.PRINT (List.rev ls), c)
             end
+         in
+            case t of
+                 Token.EOL => (Ast.PRINT [], c)
+               | _         => let val (e, c) = item (t, c)
+                              in f ([e], c) end
+         end
 
          fun compare tk =
-            let
-               val (left, c) = expression tk
-               val (opr, c) = (scan c)
-               val node = case opr of
-                                Token.EQ => Ast.EQ
-                              | Token.NE => Ast.NE
-                              | Token.GT => Ast.GT
-                              | Token.GE => Ast.GE
-                              | Token.LT => Ast.LT
-                              | Token.LE => Ast.LE
-                              | _        => raise (Basic.Syntax "expected comparison")
-               val (right, c) = expression (scan c)
-            in
-               (node (left, right), c)
-            end
+         let
+            val (left, c) = expression tk
+            val (opr, c) = (scan c)
+            val node = case opr of
+                             Token.EQ => Ast.EQ
+                           | Token.NE => Ast.NE
+                           | Token.GT => Ast.GT
+                           | Token.GE => Ast.GE
+                           | Token.LT => Ast.LT
+                           | Token.LE => Ast.LE
+                           | _        => raise (Basic.Syntax "expected comparison")
+            val (right, c) = expression (scan c)
+         in
+            (node (left, right), c)
+         end
 
          fun goStm f tk =
-            let
-               val (target, c) = expression tk
-            in
-               ((f target), c)
-            end
+         let
+            val (target, c) = expression tk
+         in
+            ((f target), c)
+         end
 
          fun fileStm f (file, c) =
             case file of
@@ -125,26 +125,26 @@ struct
                | _               => raise (Basic.Syntax "expected variable")
 
          fun inputStm tk =
+         let
+            fun var (t, c) =
+               case t of
+                    Token.VAR v  => (Ast.VAR v, c)
+                  | _            => raise (Basic.Syntax "expected variable")
+
+            fun f (ls, c) =
             let
-               fun var (t, c) =
-                  case t of
-                       Token.VAR v  => (Ast.VAR v, c)
-                     | _            => raise (Basic.Syntax "expected variable")
-
-               fun f (ls, c) =
-                  let
-                     val (t, c') = (scan c)
-                  in
-                     case t of
-                          Token.COMMA  => let val (v, c) = var (scan c')
-                                          in f (v::ls, c) end
-                        | _            => (Ast.INPUT (List.rev ls), c)
-                  end
-
-               val (v, c) = var tk
+               val (t, c') = (scan c)
             in
-               f ([v], c)
+               case t of
+                    Token.COMMA  => let val (v, c) = var (scan c')
+                                    in f (v::ls, c) end
+                  | _            => (Ast.INPUT (List.rev ls), c)
             end
+
+            val (v, c) = var tk
+         in
+            f ([v], c)
+         end
 
          fun stm (t, c) =
             case t of
@@ -169,15 +169,15 @@ struct
                | _               => raise (Basic.Syntax "expected statement")
 
          and ifStm (t, c) =
-            let
-               val (tst, c) = compare (t, c)
-               val (tk, c) = (scan c)
-               val (stm, c) = case tk of
-                                   Token.THEN   => stm (scan c)
-                                 | _            => raise (Basic.Syntax "expected THEN")
-            in
-               (Ast.IF (tst, stm), c)
-            end
+         let
+            val (tst, c) = compare (t, c)
+            val (tk, c) = (scan c)
+            val (stm, c) = case tk of
+                                Token.THEN   => stm (scan c)
+                              | _            => raise (Basic.Syntax "expected THEN")
+         in
+            (Ast.IF (tst, stm), c)
+         end
 
          fun line (t, c) =
             case t of
@@ -199,36 +199,36 @@ struct
       end
 
    fun parseInput line =
+   let
+      val scan = Scanner.scanner line
+
+      fun num t =
+         case t of
+              Token.NUM n  => n
+            | _            => raise (Basic.Input "explected number")
+
+      fun value (t, c) =
+         case t of
+              Token.MINUS     => let
+                                    val (t, c) = (scan c)
+                                    val n = num t
+                                 in
+                                    (~ n, c)
+                                 end
+            | _               => (num t, c)
+
+      fun values (ls, tk) =
       let
-         val scan = Scanner.scanner line
-
-         fun num t =
-            case t of
-                 Token.NUM n  => n
-               | _            => raise (Basic.Input "explected number")
-
-         fun value (t, c) =
-            case t of
-                 Token.MINUS     => let
-                                       val (t, c) = (scan c)
-                                       val n = num t
-                                    in
-                                       (~ n, c)
-                                    end
-               | _               => (num t, c)
-
-         fun values (ls, tk) =
-            let
-               val (n, c) = value tk
-               val (t, c) = (scan c)
-            in
-               case t of
-                    Token.COMMA  => values (n::ls, scan c)
-                  | _            => List.rev (n::ls)
-            end
-
+         val (n, c) = value tk
+         val (t, c) = (scan c)
       in
-         values ([], scan 0)
+         case t of
+              Token.COMMA  => values (n::ls, scan c)
+            | _            => List.rev (n::ls)
       end
+
+   in
+      values ([], scan 0)
+   end
 
 end
