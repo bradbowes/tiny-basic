@@ -28,17 +28,17 @@ struct
       and product tk =
       let
          fun loop (left, cont) =
-            let
-               val (opr, c) = (scan cont)
-               fun build f =
-                  let val (right, c) = unary (scan c)
-                  in loop (f (left, right), c) end
-            in
-               case opr of
-                    Token.MUL => build Ast.MUL
-                  | Token.DIV => build Ast.DIV
-                  | _         => (left, cont)
-            end
+         let
+            val (opr, c) = (scan cont)
+            fun build f =
+               let val (right, c) = unary (scan c)
+               in loop (f (left, right), c) end
+         in
+            case opr of
+                 Token.MUL => build Ast.MUL
+               | Token.DIV => build Ast.DIV
+               | _         => (left, cont)
+         end
       in
          loop (unary tk)
       end
