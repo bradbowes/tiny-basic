@@ -36,50 +36,50 @@ struct
       | BYE
 
    fun toString a =
-      let
-         fun group a =
-            case a of
-                 ADD _  => "(" ^ toString a ^ ")"
-               | SUB _  => "(" ^ toString a ^ ")"
-               | _      => toString a
-
-         fun bstr s =
-            "\"" ^
-            (String.translate (fn c => if c = #"\"" then "\"\"" else str c) s) ^
-            "\""
-
-      in
+   let
+      fun group a =
          case a of
-              NUM (n)      => Int.toString n
-            | STRING (s)   => bstr s
-            | VAR (v)      => v
-            | NEG (n)      => "-" ^ toString n
-            | ADD (x, y)   => toString x ^ " + " ^ toString y
-            | SUB (x, y)   => toString x ^ " - " ^ toString y
-            | MUL (x, y)   => group x ^ " * " ^ group y
-            | DIV (x, y)   => group x ^ " / " ^ group y
-            | EQ (x, y)    => toString x ^ " = " ^ toString y
-            | NE (x, y)    => toString x ^ " <> " ^ toString y
-            | GT (x, y)    => toString x ^ " > " ^ toString y
-            | GE (x, y)    => toString x ^ " >= " ^ toString y
-            | LT (x, y)    => toString x ^ " < " ^ toString y
-            | LE (x, y)    => toString x ^ " <= " ^ toString y
-            | PRINT (ls)   => "PRINT " ^ String.concatWith ", " (map toString ls)
-            | INPUT (ls)   => "INPUT " ^ String.concatWith ", " (map toString ls)
-            | LET (x, y)   => "LET " ^ toString x ^ " = " ^ toString y
-            | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y
-            | GOTO (x)     => "GOTO " ^ toString x
-            | GOSUB (x)    => "GOSUB " ^ toString x
-            | RETURN       => "RETURN"
-            | CLEAR        => "CLEAR"
-            | NEW          => "NEW"
-            | LOAD s       => "LOAD " ^ bstr s
-            | SAVE s       => "SAVE " ^ bstr s
-            | END          => "END"
-            | REM (s)      => "REM" ^ s
-            | LIST         => "LIST"
-            | RUN          => "RUN"
-            | BYE          => "BYE"
-            | _            => ""
-      end
+              ADD _  => "(" ^ toString a ^ ")"
+            | SUB _  => "(" ^ toString a ^ ")"
+            | _      => toString a
+
+      fun bstr s =
+         "\"" ^
+         (String.translate (fn c => if c = #"\"" then "\"\"" else str c) s) ^
+         "\""
+
+   in
+      case a of
+           NUM (n)      => Int.toString n
+         | STRING (s)   => bstr s
+         | VAR (v)      => v
+         | NEG (n)      => "-" ^ toString n
+         | ADD (x, y)   => toString x ^ " + " ^ toString y
+         | SUB (x, y)   => toString x ^ " - " ^ toString y
+         | MUL (x, y)   => group x ^ " * " ^ group y
+         | DIV (x, y)   => group x ^ " / " ^ group y
+         | EQ (x, y)    => toString x ^ " = " ^ toString y
+         | NE (x, y)    => toString x ^ " <> " ^ toString y
+         | GT (x, y)    => toString x ^ " > " ^ toString y
+         | GE (x, y)    => toString x ^ " >= " ^ toString y
+         | LT (x, y)    => toString x ^ " < " ^ toString y
+         | LE (x, y)    => toString x ^ " <= " ^ toString y
+         | PRINT (ls)   => "PRINT " ^ String.concatWith ", " (map toString ls)
+         | INPUT (ls)   => "INPUT " ^ String.concatWith ", " (map toString ls)
+         | LET (x, y)   => "LET " ^ toString x ^ " = " ^ toString y
+         | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y
+         | GOTO (x)     => "GOTO " ^ toString x
+         | GOSUB (x)    => "GOSUB " ^ toString x
+         | RETURN       => "RETURN"
+         | CLEAR        => "CLEAR"
+         | NEW          => "NEW"
+         | LOAD s       => "LOAD " ^ bstr s
+         | SAVE s       => "SAVE " ^ bstr s
+         | END          => "END"
+         | REM (s)      => "REM" ^ s
+         | LIST         => "LIST"
+         | RUN          => "RUN"
+         | BYE          => "BYE"
+         | _            => ""
+   end
 end

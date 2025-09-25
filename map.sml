@@ -24,61 +24,61 @@ struct
    val empty = LEAF
 
    fun insert (tbl, key, value) =
-      let
-         fun height LEAF = 0
+   let
+      fun height LEAF = 0
            | height (NODE (_, _, _, h)) = h
 
-         fun new_node (l, v, r) =
-            NODE (l, v, r, Int.max(height l, height r) + 1)
+      fun new_node (l, v, r) =
+         NODE (l, v, r, Int.max(height l, height r) + 1)
 
-         fun get_balance LEAF = 0
-           | get_balance (NODE (l, _, r, _)) = height l - height r
+      fun get_balance LEAF = 0
+        | get_balance (NODE (l, _, r, _)) = height l - height r
 
-         fun rotate_left (NODE (l, v, NODE (rl, rv, rr, _), _)) =
-               new_node (new_node (l, v, rl), rv, rr)
-           | rotate_left _ = raise (Basic.Bug "rotate_left")
+      fun rotate_left (NODE (l, v, NODE (rl, rv, rr, _), _)) =
+            new_node (new_node (l, v, rl), rv, rr)
+        | rotate_left _ = raise (Basic.Bug "rotate_left")
 
-         fun rotate_right (NODE (NODE (ll, lv, lr, _), v, r, _)) =
-               new_node (ll, lv, new_node (lr, v, r))
-           | rotate_right _ = raise (Basic.Bug "rotate_right")
+      fun rotate_right (NODE (NODE (ll, lv, lr, _), v, r, _)) =
+            new_node (ll, lv, new_node (lr, v, r))
+        | rotate_right _ = raise (Basic.Bug "rotate_right")
 
-         fun get_key (NODE (_, (k, _), _, _)) = k
-           | get_key _ = raise (Basic.Bug "get_key")
+      fun get_key (NODE (_, (k, _), _, _)) = k
+        | get_key _ = raise (Basic.Bug "get_key")
 
-         val t = case tbl of
-            LEAF => NODE (LEAF, (key, value), LEAF, 1)
-          | NODE (l, (k, v), r, h) =>
-               if Key.lt (key, k) then
-                  new_node (insert (l, key, value), (k, v), r)
-               else if Key.lt (k, key) then
-                  new_node (l, (k, v), insert (r, key, value))
-               else
-                  new_node (l, (key, value), r)
+      val t = case tbl of
+         LEAF => NODE (LEAF, (key, value), LEAF, 1)
+       | NODE (l, (k, v), r, h) =>
+            if Key.lt (key, k) then
+               new_node (insert (l, key, value), (k, v), r)
+            else if Key.lt (k, key) then
+               new_node (l, (k, v), insert (r, key, value))
+            else
+               new_node (l, (key, value), r)
 
-         val balance = get_balance t
-      in
-         case t of
-            NODE (l, v, r, h) =>
-               if balance > 1 then
-                  let
-                     val k = get_key l
-                  in
-                     if Key.lt (key, k) then rotate_right t
-                     else if Key.lt (k, key) then rotate_right (NODE (rotate_left l, v, r, h))
-                     else t
-                  end
-               else if balance < ~1 then
-                  let
-                     val k = get_key r
-                  in
-                     if Key.lt (k, key) then rotate_left t
-                     else if Key.lt (key, k) then rotate_left (NODE (l, v, rotate_right r, h))
-                     else t
-                  end
-               else
-                  t
-          | _ => raise (Basic.Bug "insert")
-      end
+      val balance = get_balance t
+   in
+      case t of
+         NODE (l, v, r, h) =>
+            if balance > 1 then
+               let
+                  val k = get_key l
+               in
+                  if Key.lt (key, k) then rotate_right t
+                  else if Key.lt (k, key) then rotate_right (NODE (rotate_left l, v, r, h))
+                  else t
+               end
+            else if balance < ~1 then
+               let
+                  val k = get_key r
+               in
+                  if Key.lt (k, key) then rotate_left t
+                  else if Key.lt (key, k) then rotate_left (NODE (l, v, rotate_right r, h))
+                  else t
+               end
+            else
+               t
+       | _ => raise (Basic.Bug "insert")
+   end
 
    fun lookup (tbl, key) =
       case tbl of

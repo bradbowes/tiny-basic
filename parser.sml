@@ -27,38 +27,38 @@ struct
 
          and product tk =
             let
-               fun helper (left, cont) =
+               fun loop (left, cont) =
                   let
                      val (opr, c) = (scan cont)
-                     fun fulfill f =
+                     fun build f =
                         let val (right, c) = unary (scan c)
-                        in helper (f (left, right), c) end
+                        in loop (f (left, right), c) end
                   in
                      case opr of
-                          Token.MUL => fulfill Ast.MUL
-                        | Token.DIV => fulfill Ast.DIV
+                          Token.MUL => build Ast.MUL
+                        | Token.DIV => build Ast.DIV
                         | _         => (left, cont)
                   end
             in
-               helper (unary tk)
+               loop (unary tk)
             end
 
          and expression tk =
             let
-               fun helper (left, cont) =
+               fun loop (left, cont) =
                   let
                      val (opr, c) = (scan cont)
-                     fun fulfill f =
+                     fun build f =
                         let val (right, c) = product (scan c)
-                        in helper (f (left, right), c) end
+                        in loop (f (left, right), c) end
                   in
                      case opr of
-                          Token.PLUS   => fulfill Ast.ADD
-                        | Token.MINUS  => fulfill Ast.SUB
+                          Token.PLUS   => build Ast.ADD
+                        | Token.MINUS  => build Ast.SUB
                         | _            => (left, cont)
                   end
             in
-               helper (product tk)
+               loop (product tk)
             end
 
          fun printStm (t, c) =
@@ -181,13 +181,17 @@ struct
 
          fun line (t, c) =
             case t of
-                 Token.NUM (n)   => let
-                                       val (s, _) = stm (scan c)
-                                    in
-                                       case s of
-                                            Ast.NUL   => Ast.DEL n
-                                          | _         => Ast.LINE (n, s)
-                                    end
+                 Token.NUM (n)   =>
+                     let
+                        val (s, _) = stm (scan c)
+                        handle
+                           Basic.Syntax msg => raise
+                              (Basic.Syntax (msg ^ " in " ^ Int.toString n))
+                     in
+                        case s of
+                             Ast.NUL   => Ast.DEL n
+                           | _         => Ast.LINE (n, s)
+                     end
                | _               => let val (s, _) = stm (t, c) in s end
 
       in
