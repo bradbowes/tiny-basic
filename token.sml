@@ -15,6 +15,8 @@ struct
       | LPAREN
       | RPAREN
       | COMMA
+      | SEMICOLON
+      | COLON
       | IF
       | THEN
       | END

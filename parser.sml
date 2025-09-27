@@ -205,7 +205,7 @@ struct
       fun num t =
          case t of
               Token.NUM n  => n
-            | _            => raise (Basic.Input "explected number")
+            | _            => raise (Basic.Input)
 
       fun value (t, c) =
          case t of
@@ -224,7 +224,8 @@ struct
       in
          case t of
               Token.COMMA  => values (n::ls, scan c)
-            | _            => List.rev (n::ls)
+            | Token.EOL    => List.rev (n::ls)
+            | _            => raise (Basic.Input)
       end
 
    in

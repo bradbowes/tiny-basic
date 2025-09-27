@@ -8,6 +8,6 @@ struct
    exception Direct
    exception Interrupt
    exception Quit
-   exception Input of string
+   exception Input
 end
 

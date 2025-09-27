@@ -7,37 +7,37 @@ struct
    let
       val sz = size s
 
-      fun getc pos =
+      fun getChar pos =
          if pos >= sz then #"\^D" else String.sub (s, pos)
 
-      fun whitespace pos =
+      fun skipWhite pos =
       let
-         val ch = getc pos
+         val ch = getChar pos
       in
          if ch = #" " orelse ch = #"\t" then
-            whitespace (pos + 1)
+            skipWhite (pos + 1)
          else
             (ch, pos)
       end
 
       fun number pos =
       let
-         fun f (n, pos) =
-            let
-               val ch = getc pos
-            in
-               if Char.isDigit ch then
-                  f (n * 10 + (Char.ord ch - Char.ord #"0"), pos + 1)
-               else
-                  (NUM (n), pos)
-            end
+         fun loop (n, pos) =
+         let
+            val ch = getChar pos
+         in
+            if Char.isDigit ch then
+               loop (n * 10 + (Char.ord ch - Char.ord #"0"), pos + 1)
+            else
+               (NUM (n), pos)
+         end
       in
-         f (0, pos)
+         loop (0, pos)
       end
 
       fun var (ls, pos) =
       let
-         val ch = Char.toUpper (getc pos)
+         val ch = Char.toUpper (getChar pos)
       in
          if Char.isAlphaNum ch then
             var (ch :: ls, pos + 1)
@@ -48,66 +48,66 @@ struct
       fun keyword (tok, kw, pos) =
       let
          val ls = String.explode kw
-         fun f (ls, r, pos) =
-            let
-               val ch = Char.toUpper (getc pos)
-            in
-               case ls of
-                    []    => if Char.isAlphaNum ch then var (r, pos)
-                             else (tok, pos)
-                  | c::cs => if ch = c then
-                                f (cs, c::r, pos + 1)
-                             else var (r, pos)
-            end
+         fun loop (ls, r, pos) =
+         let
+            val ch = Char.toUpper (getChar pos)
+         in
+            case ls of
+                 []    => if Char.isAlphaNum ch then var (r, pos)
+                          else (tok, pos)
+               | c::cs => if ch = c then
+                             loop (cs, c::r, pos + 1)
+                          else var (r, pos)
+         end
       in
-         f (ls, [], pos)
+         loop (ls, [], pos)
       end
 
-      fun str pos =
+      fun string pos =
       let
-         fun f (ls, p) =
-            let
-               val ch = getc p
-            in
-               if ch = #"\"" then
-                  let
-                     val ch = getc (p + 1)
-                  in
-                     if ch = #"\"" then
-                        f (ch::ls, p + 2)
-                     else
-                        (STRING (String.implode (List.rev ls)), p + 1)
-                  end
-               else if Char.contains "\n\r\^D" ch then
-                  raise (Basic.Syntax "Unterminated string")
-               else f (ch::ls, p + 1)
-            end
+         fun loop (ls, p) =
+         let
+            val ch = getChar p
+         in
+            if ch = #"\"" then
+               let
+                  val ch = getChar (p + 1)
+               in
+                  if ch = #"\"" then
+                     loop (ch::ls, p + 2)
+                  else
+                     (STRING (String.implode (List.rev ls)), p + 1)
+               end
+            else if Char.contains "\n\r\^D" ch then
+               raise (Basic.Syntax "Unterminated string")
+            else loop (ch::ls, p + 1)
+         end
       in
-         f ([], pos)
+         loop ([], pos)
       end
 
       fun comment pos =
       let
-         fun f (ls, p) =
-            let
-               val ch = getc p
-               fun ret (ls, p) = (REM (String.implode (List.rev ls)), p)
-            in
-               case (ch) of
-                    #"\n"       => ret (ls, p)
-                  | #"\r"       => ret (ls, p)
-                  | #"\^D"      => ret (ls, p)
-                  | _           => f (ch::ls, p + 1)
-            end
+         fun loop (ls, p) =
+         let
+            val ch = getChar p
+            fun ret (ls, p) = (REM (String.implode (List.rev ls)), p)
+         in
+            case (ch) of
+                 #"\n"       => ret (ls, p)
+               | #"\r"       => ret (ls, p)
+               | #"\^D"      => ret (ls, p)
+               | _           => loop (ch::ls, p + 1)
+         end
       in
-         f ([], pos)
+         loop ([], pos)
       end
 
    in
       fn pos =>
       let
-         val (ch, p) = whitespace pos
-         fun look n ch = Char.toUpper (getc (p + n)) = ch
+         val (ch, p) = skipWhite pos
+         fun look n ch = Char.toUpper (getChar (p + n)) = ch
          val peek = look 1
       in
          case Char.toUpper(ch) of
@@ -122,17 +122,17 @@ struct
             | #"="   => (EQ, p + 1)
             | #"?"   => (PRINT, p + 1)
             | #"'"   => (comment (p + 1))
-            | #"<"   => let val ch = getc (p + 1) in
-                           if ch = #"=" then (LE, p + 2)
-                           else if ch = #">" then (NE, p + 2)
-                           else (LT, p + 1)
-                        end
-            | #">"   => if getc (p + 1) = #"=" then (GE, p + 2)
+            | #"<"   => if peek #"=" then (LE, p + 2)
+                        else if peek #">" then (NE, p + 2)
+                        else (LT, p + 1)
+            | #">"   => if peek #"=" then (GE, p + 2)
                         else (GT, p + 1)
             | #"("   => (LPAREN, p + 1)
             | #")"   => (RPAREN, p + 1)
             | #","   => (COMMA, p + 1)
-            | #"\""  => str (p + 1)
+            | #";"   => (SEMICOLON, p + 1)
+            | #":"   => (COLON, p + 1)
+            | #"\""  => string (p + 1)
             | #"B"   => keyword (BYE, "BYE", p)
             | #"C"   => keyword (CLEAR, "CLEAR", p)
             | #"E"   => keyword (END, "END", p)
@@ -143,18 +143,16 @@ struct
             | #"I"   => if peek #"F" then
                            keyword (IF, "IF", p)
                         else  keyword (INPUT, "INPUT", p)
-            | #"L"   => if peek #"I" then
-                           keyword (LIST, "LIST", p)
+            | #"L"   => if peek #"I" then keyword (LIST, "LIST", p)
                         else if peek #"E" then keyword (LET, "LET", p)
                         else keyword (LOAD, "LOAD", p)
             | #"N"   => keyword (NEW, "NEW", p)
             | #"P"   => keyword (PRINT, "PRINT", p)
-            | #"R"   => if peek #"U" then
-                           keyword (RUN, "RUN", p)
+            | #"R"   => if peek #"U" then keyword (RUN, "RUN", p)
                         else if peek #"E"
-                                andalso look 2 #"M"
-                                andalso not (Char.isAlphaNum (getc (p + 3))) then
-                              comment (p + 3)
+                              andalso look 2 #"M"
+                              andalso not (Char.isAlphaNum (getChar (p + 3))) then
+                           comment (p + 3)
                         else keyword (RETURN, "RETURN", p)
             | #"S"   => keyword (SAVE, "SAVE", p)
             | #"T"   => keyword (THEN, "THEN", p)

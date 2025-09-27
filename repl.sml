@@ -60,37 +60,48 @@ struct
       let
          val msg = let
             val len = length vars
-            val plural = len > 1
          in
             "expected " ^ Int.toString len ^
-            (if plural then " comma separated" else "") ^
-            " number" ^ (if plural then "s" else "") ^
+            (if len > 1 then " comma separated" else "") ^
+            " number" ^ (if len > 1 then "s" else "") ^
             ". Try again..."
          end
 
-         fun line () =
+         fun try () =
          let
-            val l = (
-               print "? ";
-               TextIO.inputLine TextIO.stdIn
-            )
+            val line =
+            let
+               val l = (
+                  print "? ";
+                  TextIO.inputLine TextIO.stdIn
+               )
+            in
+               case l of
+                    SOME s => s
+                  | NONE   => ""
+            end
+
+            val vals = Parser.parseInput line
+
+            fun insert (env, vars, vals) =
+               case (vars, vals) of
+                    ([], [])        => env
+                  | ([], _)         => raise Basic.Input
+                  | (_::_, [])      => raise Basic.Input
+                  | (x::xs, v::vs)  => insert (StrMap.insert (env, toString x, v), xs, vs)
+
          in
-            case l of
-                 SOME s => s
-               | NONE   => ""
+            insert (e, vars, vals)
          end
-
-         val vals = Parser.parseInput (line ())
-
-         fun insert (env, vars, vals) =
-            case (vars, vals) of
-                 ([], [])        => env
-               | ([], _)         => raise (Basic.Input msg)
-               | (_::_, [])      => raise (Basic.Input msg)
-               | (x::xs, v::vs)  => insert (StrMap.insert (env, toString x, v), xs, vs)
-
       in
-         insert (e, vars, vals)
+         try ()
+         handle
+              Basic.Input     => (
+                  print ("INPUT ERROR: " ^ msg ^ "\n");
+                  input vars )
+            | Basic.Syntax _  => (
+                  print ("INPUT ERROR: " ^ msg ^ "\n");
+                  input vars )
       end
 
       fun load file =
@@ -132,14 +143,7 @@ struct
             | RUN          => StrMap.empty
             | NEW          => StrMap.empty
             | LOAD _       => StrMap.empty
-            | INPUT ls     => (input ls
-                               handle
-                                   Basic.Input msg => (
-                                       print ("INPUT ERROR: " ^ msg ^ "\n");
-                                       input ls)
-                                 | Basic.Syntax msg => (
-                                       print ("INPUT ERROR: " ^ msg ^ "\n");
-                                       input ls) )
+            | INPUT ls     => input ls
             | _            => e
 
          val c' = case cmd of
@@ -195,7 +199,7 @@ struct
          interp ([Parser.parse input], s, p, e)
          handle
               Basic.Syntax msg   => (print ("SYNTAX ERROR: " ^ msg ^ "\n"); (s, p, e))
-            | Basic.Input msg    => (print ("INPUT ERROR: " ^ msg ^ "\n"); (s, p, e))
+            | Basic.Input        => (print "INPUT ERROR\n"; (s, p, e))
             | Basic.NoImpl       => (print "FEATURE NOT IMPLEMENTED\n"; (s, p, e))
             | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (s, p, e))
             | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
