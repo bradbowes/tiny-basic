@@ -150,6 +150,7 @@ struct
          case t of
               Token.PRINT     => getPrintStm (scan c)
             | Token.EOL       => (Ast.NUL, c)
+            | Token.COLON     => (Ast.NUL, c)
             | Token.IF        => getIfStm (scan c)
             | Token.GOTO      => getGoStm Ast.GOTO (scan c)
             | Token.GOSUB     => getGoStm Ast.GOSUB (scan c)
@@ -184,7 +185,7 @@ struct
          fun loop (ls, tk) =
          let
             val (s, c) = getStatement tk
-            val (t, c') = (scan c)
+            val (t, c') = case s of Ast.NUL => tk | _ => (scan c)
          in
             case t of
                  Token.COLON  => loop (s::ls, (scan c'))
