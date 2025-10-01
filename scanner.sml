@@ -20,7 +20,7 @@ struct
             (ch, pos)
       end
 
-      fun number pos =
+      fun getNumber pos =
       let
          fun loop (n, pos) =
          let
@@ -35,17 +35,17 @@ struct
          loop (0, pos)
       end
 
-      fun var (ls, pos) =
+      fun getVar (ls, pos) =
       let
          val ch = Char.toUpper (getChar pos)
       in
          if Char.isAlphaNum ch then
-            var (ch :: ls, pos + 1)
+            getVar (ch :: ls, pos + 1)
          else
             (VAR (String.implode (List.rev ls)), pos)
       end
 
-      fun keyword (tok, kw, pos) =
+      fun getKeyword (tok, kw, pos) =
       let
          val ls = String.explode kw
          fun loop (ls, r, pos) =
@@ -53,11 +53,11 @@ struct
             val ch = Char.toUpper (getChar pos)
          in
             case ls of
-                 []    => if Char.isAlphaNum ch then var (r, pos)
+                 []    => if Char.isAlphaNum ch then getVar (r, pos)
                           else (tok, pos)
                | c::cs => if ch = c then
                              loop (cs, c::r, pos + 1)
-                          else var (r, pos)
+                          else getVar (r, pos)
          end
       in
          loop (ls, [], pos)
@@ -86,7 +86,7 @@ struct
          loop ([], pos)
       end
 
-      fun comment pos =
+      fun getComment pos =
       let
          fun loop (ls, p) =
          let
@@ -121,7 +121,7 @@ struct
             | #"/"   => (DIV, p + 1)
             | #"="   => (EQ, p + 1)
             | #"?"   => (PRINT, p + 1)
-            | #"'"   => (comment (p + 1))
+            | #"'"   => (getComment (p + 1))
             | #"<"   => if peek #"=" then (LE, p + 2)
                         else if peek #">" then (NE, p + 2)
                         else (LT, p + 1)
@@ -133,32 +133,32 @@ struct
             | #";"   => (SEMICOLON, p + 1)
             | #":"   => (COLON, p + 1)
             | #"\""  => string (p + 1)
-            | #"B"   => keyword (BYE, "BYE", p)
-            | #"C"   => keyword (CLEAR, "CLEAR", p)
-            | #"E"   => keyword (END, "END", p)
+            | #"B"   => getKeyword (BYE, "BYE", p)
+            | #"C"   => getKeyword (CLEAR, "CLEAR", p)
+            | #"E"   => getKeyword (END, "END", p)
             | #"G"   => if peek #"O" then
-                           if look 2 #"T" then keyword (GOTO, "GOTO", p)
-                           else keyword (GOSUB, "GOSUB", p)
-                        else var ([#"G"], p + 1)
+                           if look 2 #"T" then getKeyword (GOTO, "GOTO", p)
+                           else getKeyword (GOSUB, "GOSUB", p)
+                        else getVar ([#"G"], p + 1)
             | #"I"   => if peek #"F" then
-                           keyword (IF, "IF", p)
-                        else  keyword (INPUT, "INPUT", p)
-            | #"L"   => if peek #"I" then keyword (LIST, "LIST", p)
-                        else if peek #"E" then keyword (LET, "LET", p)
-                        else keyword (LOAD, "LOAD", p)
-            | #"N"   => keyword (NEW, "NEW", p)
-            | #"P"   => keyword (PRINT, "PRINT", p)
-            | #"R"   => if peek #"U" then keyword (RUN, "RUN", p)
+                           getKeyword (IF, "IF", p)
+                        else  getKeyword (INPUT, "INPUT", p)
+            | #"L"   => if peek #"I" then getKeyword (LIST, "LIST", p)
+                        else if peek #"E" then getKeyword (LET, "LET", p)
+                        else getKeyword (LOAD, "LOAD", p)
+            | #"N"   => getKeyword (NEW, "NEW", p)
+            | #"P"   => getKeyword (PRINT, "PRINT", p)
+            | #"R"   => if peek #"U" then getKeyword (RUN, "RUN", p)
                         else if peek #"E"
                               andalso look 2 #"M"
                               andalso not (Char.isAlphaNum (getChar (p + 3))) then
-                           comment (p + 3)
-                        else keyword (RETURN, "RETURN", p)
-            | #"S"   => keyword (SAVE, "SAVE", p)
-            | #"T"   => keyword (THEN, "THEN", p)
+                           getComment (p + 3)
+                        else getKeyword (RETURN, "RETURN", p)
+            | #"S"   => getKeyword (SAVE, "SAVE", p)
+            | #"T"   => getKeyword (THEN, "THEN", p)
             | _      =>
-               if Char.isDigit ch then number p
-               else if Char.isAlpha ch then var ([Char.toUpper ch], p + 1)
+               if Char.isDigit ch then getNumber p
+               else if Char.isAlpha ch then getVar ([Char.toUpper ch], p + 1)
                else raise (Basic.Syntax "Illegal character")
       end
    end

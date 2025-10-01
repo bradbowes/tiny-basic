@@ -118,6 +118,7 @@ struct
                      in
                         case stm of
                              LINE x => loop (Prog.insert (prog, x))
+                           | NUL    => loop prog
                            | _      => (
                                  TextIO.closeIn input;
                                  raise Basic.Direct )
@@ -151,6 +152,9 @@ struct
             | GOSUB x      => Prog.goto (p, eval x)
             | RETURN       => if null s then raise Basic.RetGosub
                               else hd s
+            | COMP ls      => let fun loop (c, ls) =
+                                 case ls of [] => c | x::xs => loop (x::c, xs)
+                              in loop (tl c, ls) end
             | RUN          => map #2 p
             | END          => []
             | NEW          => []

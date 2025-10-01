@@ -4,13 +4,13 @@ struct
    let
       val scan = Scanner.scanner line
 
-      fun atom (t, c) =
+      fun getAtom (t, c) =
          case t of
               Token.NUM (n)   => ((Ast.NUM n), c)
             | Token.VAR (v)   => ((Ast.VAR v), c)
             | Token.LPAREN    =>
                   let
-                     val (e, c) = expression (scan c)
+                     val (e, c) = getExpression (scan c)
                      val (rp, c) = scan c
                   in
                      case rp of
@@ -19,19 +19,19 @@ struct
                   end
             | _               => raise (Basic.Syntax "expected expression")
 
-      and unary (t, c) =
+      and getUnary (t, c) =
          case t of
-              Token.MINUS  => let val (a, c) = atom (scan c)
+              Token.MINUS  => let val (a, c) = getAtom (scan c)
                               in (Ast.NEG a, c) end
-            | _            => atom (t, c)
+            | _            => getAtom (t, c)
 
-      and product tk =
+      and getProduct tk =
       let
          fun loop (left, cont) =
          let
             val (opr, c) = (scan cont)
             fun build f =
-               let val (right, c) = unary (scan c)
+               let val (right, c) = getUnary (scan c)
                in loop (f (left, right), c) end
          in
             case opr of
@@ -40,16 +40,16 @@ struct
                | _         => (left, cont)
          end
       in
-         loop (unary tk)
+         loop (getUnary tk)
       end
 
-      and expression tk =
+      and getExpression tk =
       let
          fun loop (left, cont) =
          let
             val (opr, c) = (scan cont)
             fun build f =
-               let val (right, c) = product (scan c)
+               let val (right, c) = getProduct (scan c)
                in loop (f (left, right), c) end
          in
             case opr of
@@ -58,15 +58,15 @@ struct
                | _            => (left, cont)
          end
       in
-         loop (product tk)
+         loop (getProduct tk)
       end
 
-      fun printStm (t, c) =
+      fun getPrintStm (t, c) =
       let
          fun item (t, c) =
             case t of
                  Token.STRING (s)   => (Ast.STRING s, c)
-               | _                  => expression (t, c)
+               | _                  => getExpression (t, c)
 
          fun f (ls, c) =
          let
@@ -84,9 +84,9 @@ struct
                            in f ([e], c) end
       end
 
-      fun compare tk =
+      fun getCompare tk =
       let
-         val (left, c) = expression tk
+         val (left, c) = getExpression tk
          val (opr, c) = (scan c)
          val node = case opr of
                           Token.EQ => Ast.EQ
@@ -96,35 +96,35 @@ struct
                         | Token.LT => Ast.LT
                         | Token.LE => Ast.LE
                         | _        => raise (Basic.Syntax "expected comparison")
-         val (right, c) = expression (scan c)
+         val (right, c) = getExpression (scan c)
       in
          (node (left, right), c)
       end
 
-      fun goStm f tk =
+      fun getGoStm f tk =
       let
-         val (target, c) = expression tk
+         val (target, c) = getExpression tk
       in
          ((f target), c)
       end
 
-      fun fileStm f (file, c) =
+      fun getFileStm f (file, c) =
          case file of
               Token.STRING s  => ((f s), c)
             | _               => raise (Basic.Syntax "expected string")
 
-      fun letStm (t, c) =
+      fun getLetStm (t, c) =
          case t of
               Token.VAR (v)   =>
                   let val (t, c) = (scan c)
                   in case t of
-                       Token.EQ  => let val (e, c) = expression (scan c)
+                       Token.EQ  => let val (e, c) = getExpression (scan c)
                                     in (Ast.LET (Ast.VAR v, e), c) end
                      | _         => raise (Basic.Syntax "expected \"=\"")
                   end
             | _               => raise (Basic.Syntax "expected variable")
 
-      fun inputStm tk =
+      fun getInputStm tk =
       let
          fun var (t, c) =
             case t of
@@ -146,44 +146,62 @@ struct
          f ([v], c)
       end
 
-      fun stm (t, c) =
+      fun getStatement (t, c) =
          case t of
-              Token.PRINT     => printStm (scan c)
+              Token.PRINT     => getPrintStm (scan c)
             | Token.EOL       => (Ast.NUL, c)
-            | Token.IF        => ifStm (scan c)
-            | Token.GOTO      => goStm Ast.GOTO (scan c)
-            | Token.GOSUB     => goStm Ast.GOSUB (scan c)
+            | Token.IF        => getIfStm (scan c)
+            | Token.GOTO      => getGoStm Ast.GOTO (scan c)
+            | Token.GOSUB     => getGoStm Ast.GOSUB (scan c)
             | Token.RETURN    => (Ast.RETURN, c)
             | Token.CLEAR     => (Ast.CLEAR, c)
             | Token.NEW       => (Ast.NEW, c)
-            | Token.LOAD      => fileStm Ast.LOAD (scan c)
-            | Token.SAVE      => fileStm Ast.SAVE (scan c)
+            | Token.LOAD      => getFileStm Ast.LOAD (scan c)
+            | Token.SAVE      => getFileStm Ast.SAVE (scan c)
             | Token.END       => (Ast.END, c)
-            | Token.LET       => letStm (scan c)
-            | Token.VAR _     => letStm (t, c)
-            | Token.INPUT     => inputStm (scan c)
+            | Token.LET       => getLetStm (scan c)
+            | Token.VAR _     => getLetStm (t, c)
+            | Token.INPUT     => getInputStm (scan c)
             | Token.REM (s)   => (Ast.REM s, c)
             | Token.LIST      => (Ast.LIST, c)
             | Token.RUN       => (Ast.RUN, c)
             | Token.BYE       => (Ast.BYE, c)
             | _               => raise (Basic.Syntax "expected statement")
 
-      and ifStm (t, c) =
+      and getIfStm (t, c) =
       let
-         val (tst, c) = compare (t, c)
+         val (tst, c) = getCompare (t, c)
          val (tk, c) = (scan c)
          val (stm, c) = case tk of
-                             Token.THEN   => stm (scan c)
+                             Token.THEN   => getStatement (scan c)
                            | _            => raise (Basic.Syntax "expected THEN")
       in
          (Ast.IF (tst, stm), c)
       end
 
-      fun line (t, c) =
+      fun getCompoundStm tk =
+      let
+         fun loop (ls, tk) =
+         let
+            val (s, c) = getStatement tk
+            val (t, c') = (scan c)
+         in
+            case t of
+                 Token.COLON  => loop (s::ls, (scan c'))
+               | Token.EOL    => (case ls of
+                                      []     => (s, c)
+                                    | x::xs  => (Ast.COMP (s::ls), c) )
+               | _            => raise (Basic.Syntax "expected end of line")
+         end
+      in
+         loop ([], tk)
+      end
+
+      fun getLine (t, c) =
          case t of
-              Token.NUM (n)   =>
+              Token.NUM (n) =>
                   let
-                     val (s, _) = stm (scan c)
+                     val (s, _) = getCompoundStm (scan c)
                      handle
                         Basic.Syntax msg => raise
                            (Basic.Syntax (msg ^ " in " ^ Int.toString n))
@@ -192,44 +210,44 @@ struct
                           Ast.NUL   => Ast.DEL n
                         | _         => Ast.LINE (n, s)
                   end
-            | _               => let val (s, _) = stm (t, c) in s end
+            | _ => let val (s, _) = getCompoundStm (t, c) in s end
 
    in
-      line (scan 0)
+      getLine (scan 0)
    end
 
    fun parseInput line =
    let
       val scan = Scanner.scanner line
 
-      fun num t =
+      fun getNumber t =
          case t of
               Token.NUM n  => n
             | _            => raise (Basic.Input)
 
-      fun value (t, c) =
+      fun getValue (t, c) =
          case t of
               Token.MINUS     => let
                                     val (t, c) = (scan c)
-                                    val n = num t
+                                    val n = getNumber t
                                  in
                                     (~ n, c)
                                  end
-            | _               => (num t, c)
+            | _               => (getNumber t, c)
 
-      fun values (ls, tk) =
+      fun getValues (ls, tk) =
       let
-         val (n, c) = value tk
+         val (n, c) = getValue tk
          val (t, c) = (scan c)
       in
          case t of
-              Token.COMMA  => values (n::ls, scan c)
+              Token.COMMA  => getValues (n::ls, scan c)
             | Token.EOL    => List.rev (n::ls)
             | _            => raise (Basic.Input)
       end
 
    in
-      values ([], scan 0)
+      getValues ([], scan 0)
    end
 
 end

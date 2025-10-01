@@ -34,6 +34,7 @@ struct
       | DEL of int
       | NUL
       | BYE
+      | COMP of node list
 
    fun toString a =
    let
@@ -50,10 +51,10 @@ struct
 
    in
       case a of
-           NUM (n)      => Int.toString n
-         | STRING (s)   => bstr s
-         | VAR (v)      => v
-         | NEG (n)      => "-" ^ toString n
+           NUM n        => Int.toString n
+         | STRING s     => bstr s
+         | VAR v        => v
+         | NEG n        => "-" ^ toString n
          | ADD (x, y)   => toString x ^ " + " ^ toString y
          | SUB (x, y)   => toString x ^ " - " ^ toString y
          | MUL (x, y)   => group x ^ " * " ^ group y
@@ -64,22 +65,23 @@ struct
          | GE (x, y)    => toString x ^ " >= " ^ toString y
          | LT (x, y)    => toString x ^ " < " ^ toString y
          | LE (x, y)    => toString x ^ " <= " ^ toString y
-         | PRINT (ls)   => "PRINT " ^ String.concatWith ", " (map toString ls)
-         | INPUT (ls)   => "INPUT " ^ String.concatWith ", " (map toString ls)
+         | PRINT ls     => "PRINT " ^ String.concatWith ", " (map toString ls)
+         | INPUT ls     => "INPUT " ^ String.concatWith ", " (map toString ls)
          | LET (x, y)   => "LET " ^ toString x ^ " = " ^ toString y
          | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y
-         | GOTO (x)     => "GOTO " ^ toString x
-         | GOSUB (x)    => "GOSUB " ^ toString x
+         | GOTO x       => "GOTO " ^ toString x
+         | GOSUB x      => "GOSUB " ^ toString x
          | RETURN       => "RETURN"
          | CLEAR        => "CLEAR"
          | NEW          => "NEW"
          | LOAD s       => "LOAD " ^ bstr s
          | SAVE s       => "SAVE " ^ bstr s
          | END          => "END"
-         | REM (s)      => "REM" ^ s
+         | REM s        => "REM" ^ s
          | LIST         => "LIST"
          | RUN          => "RUN"
          | BYE          => "BYE"
+         | COMP ls      => String.concatWith ": " (map toString (List.rev ls))
          | _            => ""
    end
 end
