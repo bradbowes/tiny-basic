@@ -8,7 +8,7 @@ struct
       val sz = size s
 
       fun getChar pos =
-         if pos >= sz then #"\^D" else String.sub (s, pos)
+      if pos >= sz then #"\^D" else String.sub (s, pos)
 
       fun skipWhite pos =
       let
@@ -100,7 +100,7 @@ struct
                | _           => loop (ch::ls, p + 1)
          end
       in
-         loop ([], pos)
+         loop ((if getChar pos = #" " then [] else [#" "]), pos)
       end
 
    in

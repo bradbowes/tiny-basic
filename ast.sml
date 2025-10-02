@@ -38,17 +38,15 @@ struct
 
    fun toString a =
    let
-      fun group a =
-         case a of
-              ADD _  => "(" ^ toString a ^ ")"
-            | SUB _  => "(" ^ toString a ^ ")"
-            | _      => toString a
+      fun group a = case a of
+           ADD _  => "(" ^ toString a ^ ")"
+         | SUB _  => "(" ^ toString a ^ ")"
+         | _      => toString a
 
       fun bstr s =
          "\"" ^
          (String.translate (fn c => if c = #"\"" then "\"\"" else str c) s) ^
          "\""
-
    in
       case a of
            NUM n        => Int.toString n
