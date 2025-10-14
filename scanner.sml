@@ -63,7 +63,7 @@ struct
          loop (ls, [], pos)
       end
 
-      fun string pos =
+      fun getString pos =
       let
          fun loop (ls, p) =
          let
@@ -132,7 +132,7 @@ struct
             | #","   => (COMMA, p + 1)
             | #";"   => (SEMICOLON, p + 1)
             | #":"   => (COLON, p + 1)
-            | #"\""  => string (p + 1)
+            | #"\""  => getString (p + 1)
             | #"B"   => getKeyword (BYE, "BYE", p)
             | #"C"   => getKeyword (CLEAR, "CLEAR", p)
             | #"E"   => getKeyword (END, "END", p)

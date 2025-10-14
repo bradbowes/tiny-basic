@@ -5,47 +5,50 @@ struct
    open Ast
    fun interp (c, s, p, e) =
    let
-      fun eval a =
-         case a of
-              NUM n        => n
-            | VAR s        =>
-               let
-                  val v = StrMap.lookup (e, s)
-               in
-                  case v of
-                       SOME n => n
-                     | NONE   => 0
-               end
-            | NEG n        => ~ (eval n)
-            | ADD (x, y)   => (eval x) + (eval y)
-            | SUB (x, y)   => (eval x) - (eval y)
-            | MUL (x, y)   => (eval x) * (eval y)
-            | DIV (x, y)   => (eval x) div (eval y)
-            | _            => raise (Basic.Bug "Can't evaluate non-expression")
+      fun eval a = case a of
+           NUM n        => n
+         | VAR s        =>
+            let
+               val v = StrMap.lookup (e, s)
+            in case v of
+                 SOME n => n
+               | NONE   => 0
+            end
+         | NEG n        => ~ (eval n)
+         | ADD (x, y)   => (eval x) + (eval y)
+         | SUB (x, y)   => (eval x) - (eval y)
+         | MUL (x, y)   => (eval x) * (eval y)
+         | DIV (x, y)   => (eval x) div (eval y)
+         | _            => raise (Basic.Bug "Can't evaluate non-expression")
 
-      fun compare a =
-         case a of
-              EQ (x, y)    => (eval x) = (eval y)
-            | NE (x, y)    => (eval x) <> (eval y)
-            | GT (x, y)    => (eval x) > (eval y)
-            | GE (x, y)    => (eval x) >= (eval y)
-            | LT (x, y)    => (eval x) < (eval y)
-            | LE (x, y)    => (eval x) <= (eval y)
-            | _            => raise (Basic.Bug "Can't compare")
+      fun compare a = case a of
+           EQ (x, y)    => (eval x) = (eval y)
+         | NE (x, y)    => (eval x) <> (eval y)
+         | GT (x, y)    => (eval x) > (eval y)
+         | GE (x, y)    => (eval x) >= (eval y)
+         | LT (x, y)    => (eval x) < (eval y)
+         | LE (x, y)    => (eval x) <= (eval y)
+         | _            => raise (Basic.Bug "Can't compare")
 
       fun pr ls =
       let
-         fun output i =
-            case i of
-                 STRING s  => s
-               | _         =>
-                     let val n = eval i
-                     in
-                        (if n < 0 then "-" else "") ^
-                        (Int.toString (Int.abs n))
-                     end
+         fun output x = case x of
+              STRING s  => s
+            | _         =>
+                  let val n = eval x
+                  in (if n < 0 then "-" else "") ^ (Int.toString (Int.abs n)) end
+
+         fun prItems (ls, s) =
+            case ls of
+                 []              => s ^ "\n"
+               | ITEM (i, j)::[] => s ^ (output i) ^ (if j then "" else "\n")
+               | ITEM (i, j)::xs => prItems (
+                                       xs,
+                                       s ^ (output i) ^ (if j then "" else " "))
+               | _               => raise (Basic.Bug "expected print item")
+
       in
-         print (String.concatWith " " (map output ls) ^ "\n")
+         print (prItems (ls, ""))
       end
 
       fun list out =
@@ -58,13 +61,14 @@ struct
 
       fun input vars =
       let
-         val msg = let
+         val msg =
+         let
             val len = length vars
          in
-            "expected " ^ Int.toString len ^
+            "INPUT ERROR: expected " ^ Int.toString len ^
             (if len > 1 then " comma separated" else "") ^
             " number" ^ (if len > 1 then "s" else "") ^
-            ". Try again..."
+            ". Try again...\n"
          end
 
          fun try () =
@@ -75,20 +79,18 @@ struct
                   print "? ";
                   TextIO.inputLine TextIO.stdIn
                )
-            in
-               case l of
-                    SOME s => s
-                  | NONE   => ""
+            in case l of
+                 SOME s => s
+               | NONE   => ""
             end
 
             val vals = Parser.parseInput line
 
-            fun insert (env, vars, vals) =
-               case (vars, vals) of
-                    ([], [])        => env
-                  | ([], _)         => raise Basic.Input
-                  | (_::_, [])      => raise Basic.Input
-                  | (x::xs, v::vs)  => insert (StrMap.insert (env, toString x, v), xs, vs)
+            fun insert (env, vars, vals) = case (vars, vals) of
+                 ([], [])        => env
+               | ([], _)         => raise Basic.Input
+               | (_::_, [])      => raise Basic.Input
+               | (x::xs, v::vs)  => insert (StrMap.insert (env, toString x, v), xs, vs)
 
          in
             insert (e, vars, vals)
@@ -96,12 +98,8 @@ struct
       in
          try ()
          handle
-              Basic.Input     => (
-                  print ("INPUT ERROR: " ^ msg ^ "\n");
-                  input vars )
-            | Basic.Syntax _  => (
-                  print ("INPUT ERROR: " ^ msg ^ "\n");
-                  input vars )
+              Basic.Input     => (print msg; input vars)
+            | Basic.Syntax _  => (print msg; input vars)
       end
 
       fun load file =
@@ -111,20 +109,19 @@ struct
          fun loop prog =
          let
             val line = TextIO.inputLine  input
-         in
-            case line of
-                 SOME s =>
-                     let val stm = Parser.parse s
-                     in
-                        case stm of
-                             LINE x => loop (Prog.insert (prog, x))
-                           | NUL    => loop prog
-                           | _      => (
-                                 TextIO.closeIn input;
-                                 raise Basic.Direct )
-                     end
-               | NONE   => (TextIO.closeIn input; prog)
+         in case line of
+              SOME s =>
+                  let val stm = Parser.parse s
+                  in case stm of
+                       LINE x => loop (Prog.insert (prog, x))
+                     | NUL    => loop prog
+                     | _      => (
+                           TextIO.closeIn input;
+                           raise Basic.Direct )
+                  end
+            | NONE   => (TextIO.closeIn input; prog)
          end
+
       in
          loop []
       end
@@ -185,10 +182,9 @@ struct
 
       end
 
-   in
-      case c of
-           []     => (s, p, e)
-         | x::xs  => interp (exec x)
+   in case c of
+        []     => (s, p, e)
+      | x::xs  => interp (exec x)
 
    end
 
@@ -212,10 +208,10 @@ struct
             | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (s, p, e))
             | Basic.Quit         => raise Basic.Quit
             | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (s, p, e))
-   in
-      case line of
-           SOME s => (loop (exec s) handle x => ())
-         | NONE   => ()
+
+   in case line of
+        SOME s => (loop (exec s) handle x => ())
+      | NONE   => ()
    end
 
 end

@@ -16,6 +16,7 @@ struct
       | LT of node * node
       | LE of node * node
       | PRINT of node list
+      | ITEM of node * bool
       | IF of node * node
       | GOTO of node
       | GOSUB of node
@@ -47,6 +48,15 @@ struct
          "\"" ^
          (String.translate (fn c => if c = #"\"" then "\"\"" else str c) s) ^
          "\""
+
+      fun prItems (ls, s) =
+         case ls of
+              []                 => s
+            | ITEM (i, j)::[]  => s ^ (toString i) ^ (if j then ";" else "")
+            | ITEM (i, j)::xs  => prItems (
+                                       xs,
+                                       s ^ (toString i) ^ (if j then "; " else ", "))
+            | _                  => raise (Basic.Bug "expected print item")
    in
       case a of
            NUM n        => Int.toString n
@@ -63,7 +73,7 @@ struct
          | GE (x, y)    => toString x ^ " >= " ^ toString y
          | LT (x, y)    => toString x ^ " < " ^ toString y
          | LE (x, y)    => toString x ^ " <= " ^ toString y
-         | PRINT ls     => "PRINT " ^ String.concatWith ", " (map toString ls)
+         | PRINT ls     => "PRINT " ^ prItems (ls, "")
          | INPUT ls     => "INPUT " ^ String.concatWith ", " (map toString ls)
          | LET (x, y)   => "LET " ^ toString x ^ " = " ^ toString y
          | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y

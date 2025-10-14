@@ -2,12 +2,11 @@ structure Prog =
 struct
    fun insert (prog, (ln, stm)) =
    let
-      fun loop (prev, next) =
-      case next of
-           []           => (List.rev prev) @ [(ln, stm)]
+      fun loop (prev, next) = case next of
+           []           => List.revAppend (prev, [(ln, stm)])
          | (l, s)::xs   =>
-               if l > ln then (List.rev prev) @ ((ln, stm)::next)
-               else if l = ln then (List.rev prev) @ ((ln, stm)::xs)
+               if l > ln then List.revAppend (prev, (ln, stm)::next)
+               else if l = ln then List.revAppend (prev, (ln, stm)::xs)
                else loop ((l, s)::prev, xs)
    in
       loop ([], prog)
@@ -15,19 +14,17 @@ struct
 
    fun delete (prog, ln) =
    let
-      fun loop (prev, next) =
-      case next of
+      fun loop (prev, next) = case next of
            []           => prog
          | (l, s)::xs   =>
                if l > ln then prog
-               else if l = ln then (List.rev prev) @ xs
+               else if l = ln then List.revAppend (prev, xs)
                else loop ((l, s)::prev, xs)
    in
       loop ([], prog)
    end
 
-   fun goto (prog, ln) =
-   case prog of
+   fun goto (prog, ln) = case prog of
         []           => raise Basic.NoLine
       | (l, _)::xs   =>
             if l > ln then raise Basic.NoLine

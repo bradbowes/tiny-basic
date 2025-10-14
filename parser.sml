@@ -61,25 +61,40 @@ struct
 
       fun getPrintStm (t, c) =
       let
-         fun item (t, c) = case t of
-              Token.STRING (s)   => (Ast.STRING s, c)
-            | _                  => getExpression (t, c)
-
-         fun loop (ls, c) =
+         fun getItem (t, c) =
          let
-            val (t, c') = (scan c)
+            val (i, c) = case t of
+                 Token.STRING (s)   => (Ast.STRING s, c)
+               | _                  => getExpression (t, c)
+            val (sep, c') = scan c
+         in
+            case sep of
+                 Token.SEMICOLON => (Ast.ITEM (i, true), c')
+               | Token.COMMA     => (Ast.ITEM (i, false), c')
+               | _               => (Ast.ITEM (i, false), c)
+         end
+
+         fun loop (ls, tk) =
+         let
+            val (e, c) = getItem tk
+            val (t, c') = scan c
          in
             case t of
-                 Token.COMMA  => let val (e, c) = item (scan c')
-                                 in loop (e::ls, c) end
-               | _            => (Ast.PRINT (List.rev ls), c)
+                 Token.STRING _  => loop (e::ls, (t, c'))
+               | Token.MINUS     => loop (e::ls, (t, c'))
+               | Token.LPAREN    => loop (e::ls, (t, c'))
+               | Token.VAR _     => loop (e::ls, (t, c'))
+               | Token.NUM _     => loop (e::ls, (t, c'))
+               | _               => (Ast.PRINT (List.rev (e::ls)), c)
          end
       in
          case t of
-              Token.EOL    => (Ast.PRINT [], c)
-            | Token.COLON  => (Ast.PRINT [], c)
-            | _            => let val (e, c) = item (t, c)
-                              in loop ([e], c) end
+              Token.STRING _  => loop ([], (t, c))
+            | Token.MINUS     => loop ([], (t, c))
+            | Token.LPAREN    => loop ([], (t, c))
+            | Token.VAR _     => loop ([], (t, c))
+            | Token.NUM _     => loop ([], (t, c))
+            | _               => (Ast.PRINT [], c)
       end
 
       fun getCompare tk =
