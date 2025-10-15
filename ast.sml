@@ -49,14 +49,14 @@ struct
          (String.translate (fn c => if c = #"\"" then "\"\"" else str c) s) ^
          "\""
 
-      fun prItems (ls, s) =
-         case ls of
-              []                 => s
-            | ITEM (i, j)::[]  => s ^ (toString i) ^ (if j then ";" else "")
-            | ITEM (i, j)::xs  => prItems (
-                                       xs,
-                                       s ^ (toString i) ^ (if j then "; " else ", "))
-            | _                  => raise (Basic.Bug "expected print item")
+      fun prItems (ls, s) = case ls of
+           []              => s
+         | ITEM (i, j)::[] => s ^ (toString i) ^ (if j then ";" else "")
+         | ITEM (i, j)::xs => prItems (
+                                 xs,
+                                 s ^ (toString i) ^ (if j then "; " else ", "))
+         | _               => raise (Basic.Bug "expected print item")
+
    in
       case a of
            NUM n        => Int.toString n

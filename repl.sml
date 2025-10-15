@@ -36,16 +36,15 @@ struct
               STRING s  => s
             | _         =>
                   let val n = eval x
-                  in (if n < 0 then "-" else "") ^ (Int.toString (Int.abs n)) end
+                  in (if n < 0 then "-" else " ") ^ (Int.toString (Int.abs n)) end
 
-         fun prItems (ls, s) =
-            case ls of
-                 []              => s ^ "\n"
-               | ITEM (i, j)::[] => s ^ (output i) ^ (if j then "" else "\n")
-               | ITEM (i, j)::xs => prItems (
-                                       xs,
-                                       s ^ (output i) ^ (if j then "" else " "))
-               | _               => raise (Basic.Bug "expected print item")
+         fun prItems (ls, s) = case ls of
+              []              => s ^ "\n"
+            | ITEM (i, j)::[] => s ^ (output i) ^ (if j then "" else "\n")
+            | ITEM (i, j)::xs => prItems (
+                                    xs,
+                                    s ^ (output i) ^ (if j then "" else " "))
+            | _               => raise (Basic.Bug "expected print item")
 
       in
          print (prItems (ls, ""))

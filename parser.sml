@@ -59,42 +59,27 @@ struct
          loop (getProduct tk)
       end
 
-      fun getPrintStm (t, c) =
+      fun getPrintStm tk =
       let
-         fun getItem (t, c) =
-         let
-            val (i, c) = case t of
-                 Token.STRING (s)   => (Ast.STRING s, c)
-               | _                  => getExpression (t, c)
-            val (sep, c') = scan c
-         in
-            case sep of
-                 Token.SEMICOLON => (Ast.ITEM (i, true), c')
-               | Token.COMMA     => (Ast.ITEM (i, false), c')
-               | _               => (Ast.ITEM (i, false), c)
-         end
+         fun getItem (t, c) = case t of
+              Token.STRING s  => SOME (Ast.STRING s, c)
+            | Token.MINUS     => SOME (getExpression (t, c))
+            | Token.LPAREN    => SOME (getExpression (t, c))
+            | Token.VAR _     => SOME (getExpression (t, c))
+            | Token.NUM _     => SOME (getExpression (t, c))
+            | _               => NONE
 
-         fun loop (ls, tk) =
-         let
-            val (e, c) = getItem tk
-            val (t, c') = scan c
-         in
-            case t of
-                 Token.STRING _  => loop (e::ls, (t, c'))
-               | Token.MINUS     => loop (e::ls, (t, c'))
-               | Token.LPAREN    => loop (e::ls, (t, c'))
-               | Token.VAR _     => loop (e::ls, (t, c'))
-               | Token.NUM _     => loop (e::ls, (t, c'))
-               | _               => (Ast.PRINT (List.rev (e::ls)), c)
-         end
+         fun loop (ls, (t, c)) = case getItem (t, c) of
+              SOME (x, c)  =>
+               let val (sep, c') = scan c
+               in case sep of
+                    Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, scan c')
+                  | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, scan c')
+                  | _               => (Ast.PRINT (List.rev (Ast.ITEM (x, false)::ls)), c)
+               end
+            | NONE         => (Ast.PRINT (List.rev ls), c)
       in
-         case t of
-              Token.STRING _  => loop ([], (t, c))
-            | Token.MINUS     => loop ([], (t, c))
-            | Token.LPAREN    => loop ([], (t, c))
-            | Token.VAR _     => loop ([], (t, c))
-            | Token.NUM _     => loop ([], (t, c))
-            | _               => (Ast.PRINT [], c)
+         loop ([], tk)
       end
 
       fun getCompare tk =
