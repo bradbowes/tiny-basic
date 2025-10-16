@@ -138,7 +138,10 @@ struct
             | #"E"   => getKeyword (END, "END", p)
             | #"G"   => if peek #"O" then
                            if look 2 #"T" then getKeyword (GOTO, "GOTO", p)
-                           else getKeyword (GOSUB, "GOSUB", p)
+                           else if look 2 #"S" then getKeyword (GOSUB, "GOSUB", p)
+                           else if Char.isAlphaNum (getChar (p + 2)) then
+                              getVar ([#"O", #"G"], p + 2)
+                           else (GO, p + 2)
                         else getVar ([#"G"], p + 1)
             | #"I"   => if peek #"F" then
                            getKeyword (IF, "IF", p)
@@ -154,8 +157,10 @@ struct
                               andalso not (Char.isAlphaNum (getChar (p + 3))) then
                            getComment (p + 3)
                         else getKeyword (RETURN, "RETURN", p)
-            | #"S"   => getKeyword (SAVE, "SAVE", p)
-            | #"T"   => getKeyword (THEN, "THEN", p)
+            | #"S"   => if peek #"A" then getKeyword (SAVE, "SAVE", p)
+                        else getKeyword (SUB, "SUB", p)
+            | #"T"   => if peek #"H" then getKeyword (THEN, "THEN", p)
+                        else getKeyword (TO, "TO", p)
             | _      =>
                if Char.isDigit ch then getNumber p
                else if Char.isAlpha ch then getVar ([Char.toUpper ch], p + 1)

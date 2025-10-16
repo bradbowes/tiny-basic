@@ -23,6 +23,9 @@ struct
       | LET
       | GOTO
       | GOSUB
+      | GO
+      | TO
+      | SUB
       | RETURN
       | INPUT
       | PRINT
@@ -37,4 +40,5 @@ struct
       | STRING of string
       | REM of string
       | BYE
+      | RENUM
 end

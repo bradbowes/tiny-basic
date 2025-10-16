@@ -144,8 +144,8 @@ struct
             | _            => e
 
          val c' = case cmd of
-              GOTO x       => Prog.goto (p, eval x)
-            | GOSUB x      => Prog.goto (p, eval x)
+              GOTO n       => Prog.goto (p, n)
+            | GOSUB n      => Prog.goto (p, n)
             | RETURN       => if null s then raise Basic.RetGosub
                               else hd s
             | COMP ls      => let fun loop (c, ls) =

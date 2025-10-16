@@ -18,8 +18,8 @@ struct
       | PRINT of node list
       | ITEM of node * bool
       | IF of node * node
-      | GOTO of node
-      | GOSUB of node
+      | GOTO of int
+      | GOSUB of int
       | RETURN
       | INPUT of node list
       | LET of node * node
@@ -35,6 +35,7 @@ struct
       | DEL of int
       | NUL
       | BYE
+      | RENUM of int * int
       | COMP of node list
 
    fun toString a =
@@ -77,8 +78,8 @@ struct
          | INPUT ls     => "INPUT " ^ String.concatWith ", " (map toString ls)
          | LET (x, y)   => "LET " ^ toString x ^ " = " ^ toString y
          | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y
-         | GOTO x       => "GOTO " ^ toString x
-         | GOSUB x      => "GOSUB " ^ toString x
+         | GOTO n       => "GOTO " ^ Int.toString n
+         | GOSUB n      => "GOSUB " ^ Int.toString n
          | RETURN       => "RETURN"
          | CLEAR        => "CLEAR"
          | NEW          => "NEW"
@@ -89,6 +90,7 @@ struct
          | LIST         => "LIST"
          | RUN          => "RUN"
          | BYE          => "BYE"
+         | RENUM (m, n) => "RENUM " ^ Int.toString m ^ ", " ^ Int.toString n
          | COMP ls      => String.concatWith ": " (map toString (List.rev ls))
          | _            => ""
    end

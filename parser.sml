@@ -99,12 +99,9 @@ struct
          (node (left, right), c)
       end
 
-      fun getGoStm f tk =
-      let
-         val (target, c) = getExpression tk
-      in
-         ((f target), c)
-      end
+      fun getGoStm f (t, c) = case t of
+           Token.NUM n  => ((f n), c)
+         | _            => raise (Basic.Syntax "expected line number")
 
       fun getFileStm f (file, c) = case file of
            Token.STRING s  => ((f s), c)
@@ -146,6 +143,11 @@ struct
          | Token.EOL       => (Ast.NUL, c)
          | Token.COLON     => (Ast.NUL, c)
          | Token.IF        => getIfStm (scan c)
+         | Token.GO        => let val (t, c) = scan c in case t of
+                                   Token.TO  => getGoStm Ast.GOTO (scan c)
+                                 | Token.SUB => getGoStm Ast.GOSUB (scan c)
+                                 | _         => raise (Basic.Syntax "expected GOTO or GOSUB")
+                              end
          | Token.GOTO      => getGoStm Ast.GOTO (scan c)
          | Token.GOSUB     => getGoStm Ast.GOSUB (scan c)
          | Token.RETURN    => (Ast.RETURN, c)
