@@ -2,10 +2,10 @@ $(SML_LIB)/basis/basis.mlb
 
 error.sml
 map.sml
-prog.sml
 token.sml
 scanner.sml
 ast.sml
+prog.sml
 parser.sml
 repl.sml
 main.sml

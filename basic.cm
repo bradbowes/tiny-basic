@@ -2,10 +2,10 @@ Group is
    main.sml
    repl.sml
    parser.sml
+   prog.sml
    ast.sml
    scanner.sml
    token.sml
-   prog.sml
    map.sml
    error.sml
 

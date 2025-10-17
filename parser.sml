@@ -103,7 +103,7 @@ struct
            Token.NUM n  => ((f n), c)
          | _            => raise (Basic.Syntax "expected line number")
 
-      fun getFileStm f (file, c) = case file of
+      fun getFileCmd f (file, c) = case file of
            Token.STRING s  => ((f s), c)
          | _               => raise (Basic.Syntax "expected string")
 
@@ -138,6 +138,26 @@ struct
          loop ([v], c)
       end
 
+      fun getRenumCmd c =
+      let
+         val (t, c') = scan c
+      in
+         case t of
+              Token.NUM m  =>
+                  let
+                     val (t, c) = scan c'
+                     val (t, c) = case t of
+                          Token.COMMA => scan c
+                        | Token.NUM _ => (t, c)
+                        | _           => (Token.EOL, c')
+                  in
+                     case t of
+                          Token.NUM n  => (Ast.RENUM (m, n), c)
+                        | _            => (Ast.RENUM (m, 10), c')
+                  end
+         | _            => (Ast.RENUM (100, 10), c)
+      end
+
       fun getStatement (t, c) = case t of
            Token.PRINT     => getPrintStm (scan c)
          | Token.EOL       => (Ast.NUL, c)
@@ -153,8 +173,8 @@ struct
          | Token.RETURN    => (Ast.RETURN, c)
          | Token.CLEAR     => (Ast.CLEAR, c)
          | Token.NEW       => (Ast.NEW, c)
-         | Token.LOAD      => getFileStm Ast.LOAD (scan c)
-         | Token.SAVE      => getFileStm Ast.SAVE (scan c)
+         | Token.LOAD      => getFileCmd Ast.LOAD (scan c)
+         | Token.SAVE      => getFileCmd Ast.SAVE (scan c)
          | Token.END       => (Ast.END, c)
          | Token.LET       => getLetStm (scan c)
          | Token.VAR _     => getLetStm (t, c)
@@ -163,6 +183,7 @@ struct
          | Token.LIST      => (Ast.LIST, c)
          | Token.RUN       => (Ast.RUN, c)
          | Token.BYE       => (Ast.BYE, c)
+         | Token.RENUM     => getRenumCmd c
          | _               => raise (Basic.Syntax "expected statement")
 
       and getIfStm (t, c) =

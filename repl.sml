@@ -132,6 +132,7 @@ struct
             | DEL ln       => Prog.delete (p, ln)
             | NEW          => []
             | LOAD file    => load file
+            | RENUM (x, y) => Prog.renum (p, x, y)
             | _            => p
 
          val e' = case cmd of

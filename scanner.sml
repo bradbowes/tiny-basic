@@ -152,11 +152,13 @@ struct
             | #"N"   => getKeyword (NEW, "NEW", p)
             | #"P"   => getKeyword (PRINT, "PRINT", p)
             | #"R"   => if peek #"U" then getKeyword (RUN, "RUN", p)
-                        else if peek #"E"
-                              andalso look 2 #"M"
-                              andalso not (Char.isAlphaNum (getChar (p + 3))) then
-                           getComment (p + 3)
-                        else getKeyword (RETURN, "RETURN", p)
+                        else if peek #"E" then
+                           if look 2 #"N" then getKeyword (RENUM, "RENUM", p)
+                           else if look 2 #"M"
+                                andalso not (Char.isAlphaNum (getChar (p + 3))) then
+                              getComment (p + 3)
+                           else getKeyword (RETURN, "RETURN", p)
+                        else getVar ([#"R"], p + 1)
             | #"S"   => if peek #"A" then getKeyword (SAVE, "SAVE", p)
                         else getKeyword (SUB, "SUB", p)
             | #"T"   => if peek #"H" then getKeyword (THEN, "THEN", p)
