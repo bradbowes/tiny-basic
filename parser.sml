@@ -155,7 +155,7 @@ struct
                           Token.NUM n  => (Ast.RENUM (m, n), c)
                         | _            => (Ast.RENUM (m, 10), c')
                   end
-         | _            => (Ast.RENUM (100, 10), c)
+      | _                  => (Ast.RENUM (100, 10), c)
       end
 
       fun getStatement (t, c) = case t of
@@ -186,18 +186,7 @@ struct
          | Token.RENUM     => getRenumCmd c
          | _               => raise (Basic.Syntax "expected statement")
 
-      and getIfStm (t, c) =
-      let
-         val (tst, c) = getCompare (t, c)
-         val (tk, c) = (scan c)
-         val (stm, c) = case tk of
-              Token.THEN   => getStatement (scan c)
-            | _            => raise (Basic.Syntax "expected THEN")
-      in
-         (Ast.IF (tst, stm), c)
-      end
-
-      fun getCompoundStm tk =
+      and getCompoundStm tk =
       let
          fun loop (ls, tk) =
          let
@@ -213,6 +202,20 @@ struct
          end
       in
          loop ([], tk)
+      end
+
+      and getIfStm (t, c) =
+      let
+         val (tst, c) = getCompare (t, c)
+         val (t, c) = (scan c)
+         val (stm, c) = case t of
+              Token.THEN   => let val (t, c) = scan c in case t of
+                                   Token.NUM n  => (Ast.GOTO n, c)
+                                 | _            => getCompoundStm (t, c)
+                              end
+            | _            => raise (Basic.Syntax "expected THEN")
+      in
+         (Ast.IF (tst, stm), c)
       end
 
       fun getLine (t, c) = case t of
