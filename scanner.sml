@@ -143,13 +143,18 @@ struct
                               getVar ([#"O", #"G"], p + 2)
                            else (GO, p + 2)
                         else getVar ([#"G"], p + 1)
+            | #"F"   => getKeyword (FOR, "FOR", p)
             | #"I"   => if peek #"F" then
                            getKeyword (IF, "IF", p)
                         else  getKeyword (INPUT, "INPUT", p)
             | #"L"   => if peek #"I" then getKeyword (LIST, "LIST", p)
                         else if peek #"E" then getKeyword (LET, "LET", p)
                         else getKeyword (LOAD, "LOAD", p)
-            | #"N"   => getKeyword (NEW, "NEW", p)
+            | #"N"   => if peek #"E" then
+                           if look 2 #"X" then
+                              getKeyword (NEXT, "NEXT", p)
+                           else getKeyword (NEW, "NEW", p)
+                        else getVar ([#"N"], p + 1)
             | #"P"   => getKeyword (PRINT, "PRINT", p)
             | #"R"   => if peek #"U" then getKeyword (RUN, "RUN", p)
                         else if peek #"E" then
@@ -160,6 +165,7 @@ struct
                            else getKeyword (RETURN, "RETURN", p)
                         else getVar ([#"R"], p + 1)
             | #"S"   => if peek #"A" then getKeyword (SAVE, "SAVE", p)
+                        else if peek #"T" then getKeyword (STEP, "STEP", p)
                         else getKeyword (SUB, "SUB", p)
             | #"T"   => if peek #"H" then getKeyword (THEN, "THEN", p)
                         else getKeyword (TO, "TO", p)

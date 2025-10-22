@@ -21,8 +21,10 @@ struct
       | GOTO of int
       | GOSUB of int
       | RETURN
-      | INPUT of node list
-      | LET of node * node
+      | FOR of string * node * node * node option
+      | NEXT of string list
+      | INPUT of string list
+      | LET of string * node
       | CLEAR
       | NEW
       | LOAD of string
@@ -75,12 +77,16 @@ struct
          | LT (x, y)    => toString x ^ " < " ^ toString y
          | LE (x, y)    => toString x ^ " <= " ^ toString y
          | PRINT ls     => "PRINT " ^ prItems (ls, "")
-         | INPUT ls     => "INPUT " ^ String.concatWith ", " (map toString ls)
-         | LET (x, y)   => "LET " ^ toString x ^ " = " ^ toString y
+         | INPUT ls     => "INPUT " ^ String.concatWith ", " ls
+         | LET (x, y)   => "LET " ^ x ^ " = " ^ toString y
          | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y
          | GOTO n       => "GOTO " ^ Int.toString n
          | GOSUB n      => "GOSUB " ^ Int.toString n
          | RETURN       => "RETURN"
+         | FOR
+           (w, x, y, z) => "FOR " ^ w ^ " = " ^ toString x ^ " TO " ^ toString y ^
+                           (case z of SOME e => " STEP " ^ toString e | NONE => "")
+         | NEXT ls      => "NEXT " ^ String.concatWith ", " ls
          | CLEAR        => "CLEAR"
          | NEW          => "NEW"
          | LOAD s       => "LOAD " ^ bstr s

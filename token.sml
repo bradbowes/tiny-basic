@@ -27,6 +27,9 @@ struct
       | TO
       | SUB
       | RETURN
+      | FOR
+      | NEXT
+      | STEP
       | INPUT
       | PRINT
       | CLEAR

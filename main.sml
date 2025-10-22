@@ -2,7 +2,7 @@ structure Main =
 struct
 
    fun main _ = (
-      print "MY TINY BASIC\n\n";
+      print "MY TINY BASIC\n";
       Repl.loop ([], [], StrMap.empty);
       0
    )

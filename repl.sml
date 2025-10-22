@@ -89,7 +89,7 @@ struct
                  ([], [])        => env
                | ([], _)         => raise Basic.Input
                | (_::_, [])      => raise Basic.Input
-               | (x::xs, v::vs)  => insert (StrMap.insert (env, toString x, v), xs, vs)
+               | (x::xs, v::vs)  => insert (StrMap.insert (env, x, v), xs, vs)
 
          in
             insert (e, vars, vals)
@@ -136,7 +136,7 @@ struct
             | _            => p
 
          val e' = case cmd of
-              LET (x, y)   => StrMap.insert (e, toString x, eval y)
+              LET (x, y)   => StrMap.insert (e, x, eval y)
             | CLEAR        => StrMap.empty
             | RUN          => StrMap.empty
             | NEW          => StrMap.empty
@@ -211,7 +211,7 @@ struct
 
    in case line of
         SOME s => (loop (exec s) handle x => ())
-      | NONE   => ()
+      | NONE   => (print "\n"; ())
    end
 
 end

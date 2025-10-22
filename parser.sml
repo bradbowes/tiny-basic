@@ -4,19 +4,24 @@ struct
    let
       val scan = Scanner.scanner line
 
+      fun advance (tok, c, err) =
+      let
+         val (t, c') = scan c
+      in
+         if t = tok then c' else raise (Basic.Syntax err)
+      end
+
       fun getAtom (t, c) = case t of
            Token.NUM (n)   => ((Ast.NUM n), c)
          | Token.VAR (v)   => ((Ast.VAR v), c)
          | Token.LPAREN    =>
                let
                   val (e, c) = getExpression (scan c)
-                  val (rp, c) = scan c
+                  val c' = advance (Token.RPAREN, c, "expected \")\"")
                in
-                  case rp of
-                       Token.RPAREN => (e, c)
-                     | _            => raise (Basic.Syntax "expected \")\"")
+                  (e, c')
                end
-         | _               => raise (Basic.Syntax "expected expression")
+         | _               => raise (Basic.Syntax "expected numeric expression")
 
       and getUnary (t, c) = case t of
            Token.MINUS  => let val (a, c) = getAtom (scan c)
@@ -108,17 +113,16 @@ struct
          | _               => raise (Basic.Syntax "expected string")
 
       fun getVar (t, c) = case t of
-           Token.VAR v  => (Ast.VAR v, c)
+           Token.VAR v  => (v, c)
          | _            => raise (Basic.Syntax "expected variable")
 
       fun getLetStm tk =
       let
          val (v, c) = getVar tk
-         val (t, c) = (scan c)
-      in case t of
-           Token.EQ  => let val (e, c) = getExpression (scan c)
-                        in (Ast.LET ( v, e), c) end
-         | _         => raise (Basic.Syntax "expected \"=\"")
+         val c = advance (Token.EQ, c, v ^ " is not a command")
+         val (e, c) = getExpression (scan c)
+      in
+         (Ast.LET (v, e), c)
       end
 
       fun getInputStm tk =
@@ -207,13 +211,11 @@ struct
       and getIfStm (t, c) =
       let
          val (tst, c) = getCompare (t, c)
-         val (t, c) = (scan c)
+         val c = advance (Token.THEN, c, "expected THEN")
+         val (t, c) = scan c
          val (stm, c) = case t of
-              Token.THEN   => let val (t, c) = scan c in case t of
-                                   Token.NUM n  => (Ast.GOTO n, c)
-                                 | _            => getCompoundStm (t, c)
-                              end
-            | _            => raise (Basic.Syntax "expected THEN")
+              Token.NUM n  => (Ast.GOTO n, c)
+            | _            => getCompoundStm (t, c)
       in
          (Ast.IF (tst, stm), c)
       end
