@@ -22,7 +22,7 @@ struct
       | GOSUB of int
       | RETURN
       | FOR of string * node * node * node option
-      | NEXT of string list
+      | NEXT of string option
       | INPUT of string list
       | LET of string * node
       | CLEAR
@@ -86,7 +86,7 @@ struct
          | FOR
            (w, x, y, z) => "FOR " ^ w ^ " = " ^ toString x ^ " TO " ^ toString y ^
                            (case z of SOME e => " STEP " ^ toString e | NONE => "")
-         | NEXT ls      => "NEXT " ^ String.concatWith ", " ls
+         | NEXT x       => "NEXT " ^ getOpt (x, "")
          | CLEAR        => "CLEAR"
          | NEW          => "NEW"
          | LOAD s       => "LOAD " ^ bstr s

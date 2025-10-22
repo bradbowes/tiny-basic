@@ -4,6 +4,7 @@ struct
    exception NoImpl
    exception Bug of string
    exception RetGosub
+   exception NextFor
    exception NoLine
    exception Direct
    exception Interrupt

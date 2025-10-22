@@ -1,19 +1,15 @@
 structure Repl : sig
-   val loop : Ast.node list list * (int * Ast.node) list * int StrMap.map -> unit
+   val loop : Ast.node list list *
+    (string * int * int * Ast.node list) list *
+   (int * Ast.node) list * int StrMap.map -> unit
 end  =
 struct
    open Ast
-   fun interp (c, s, p, e) =
+   fun interp (c, gs, fs, p, e) =
    let
       fun eval a = case a of
            NUM n        => n
-         | VAR s        =>
-            let
-               val v = StrMap.lookup (e, s)
-            in case v of
-                 SOME n => n
-               | NONE   => 0
-            end
+         | VAR s        => getOpt (StrMap.lookup (e, s), 0)
          | NEG n        => ~ (eval n)
          | ADD (x, y)   => (eval x) + (eval y)
          | SUB (x, y)   => (eval x) - (eval y)
@@ -78,9 +74,8 @@ struct
                   print "? ";
                   TextIO.inputLine TextIO.stdIn
                )
-            in case l of
-                 SOME s => s
-               | NONE   => ""
+            in
+               getOpt (l, "")
             end
 
             val vals = Parser.parseInput line
@@ -125,6 +120,25 @@ struct
          loop []
       end
 
+      fun nextIncrement opt =
+      let
+         val (v, limit, inc, cont) = case fs of
+              x::xs  => x
+            | []     => raise Basic.NextFor
+         val v' = getOpt (opt, v)
+      in
+         if v = v' then
+            let
+               val n = getOpt (StrMap.lookup (e, v), 0) + inc
+               val c' = if n <= limit then cont else tl c
+               val fs' = if n <= limit then fs else tl fs
+               val e' = StrMap.insert (e, v, n)
+            in
+               (c', gs, fs', p, e')
+            end
+         else raise Basic.NextFor
+      end
+
       fun exec cmd =
       let
          val p' = case cmd of
@@ -142,13 +156,15 @@ struct
             | NEW          => StrMap.empty
             | LOAD _       => StrMap.empty
             | INPUT ls     => input ls
+            | FOR
+              (v, i, _, _) => StrMap.insert (e, v, eval i)
             | _            => e
 
          val c' = case cmd of
               GOTO n       => Prog.goto (p, n)
             | GOSUB n      => Prog.goto (p, n)
-            | RETURN       => if null s then raise Basic.RetGosub
-                              else hd s
+            | RETURN       => if null gs then raise Basic.RetGosub
+                              else hd gs
             | COMP ls      => let fun loop (c, ls) =
                                  case ls of [] => c | x::xs => loop (x::c, xs)
                               in loop (tl c, ls) end
@@ -158,13 +174,19 @@ struct
             | LOAD _       => []
             | _            => tl c
 
-         val s' = case cmd of
-              GOSUB _      => (tl c)::s
-            | RETURN       => tl s
+         val gs' = case cmd of
+              GOSUB _      => (tl c)::gs
+            | RETURN       => tl gs
             | NEW          => []
             | LOAD _       => []
             | END          => []
-            | _            => s
+            | _            => gs
+
+         val fs' = case cmd of
+              FOR (v, _, limit, inc)   => (v, eval limit,
+                                          eval (getOpt (inc, NUM 1)),
+                                          tl c)::fs
+            | _                        => fs
 
       in
          case cmd of
@@ -177,18 +199,19 @@ struct
             ;
 
          case cmd of
-              IF (x, y)    => if compare x then exec y else (c', s', p', e')
-            | _            => (c', s', p', e')
+              IF (x, y)    => if compare x then exec y else (c', gs', fs', p', e')
+            | NEXT x       => nextIncrement x
+            | _            => (c', gs', fs', p', e')
 
       end
 
    in case c of
-        []     => (s, p, e)
+        []     => (gs, fs, p, e)
       | x::xs  => interp (exec x)
 
    end
 
-   fun loop (s, p, e) =
+   fun loop (gs, fs, p, e) =
    let
       val line = (
          print "*> ";
@@ -196,18 +219,19 @@ struct
       )
 
       fun exec input =
-         interp ([Parser.parse input], s, p, e)
+         interp ([Parser.parse input], gs, fs, p, e)
          handle
-              Basic.Syntax msg   => (print ("SYNTAX ERROR: " ^ msg ^ "\n"); (s, p, e))
-            | Basic.Input        => (print "INPUT ERROR\n"; (s, p, e))
-            | Basic.NoImpl       => (print "FEATURE NOT IMPLEMENTED\n"; (s, p, e))
-            | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (s, p, e))
-            | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (s, p, e))
-            | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (s, p, e))
-            | Basic.Direct       => (print "ERROR: Command in program text\n"; (s, p, e))
-            | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (s, p, e))
+              Basic.Syntax msg   => (print ("SYNTAX ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
+            | Basic.Input        => (print "INPUT ERROR\n"; (gs, fs, p, e))
+            | Basic.NoImpl       => (print "FEATURE NOT IMPLEMENTED\n"; (gs, fs, p, e))
+            | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (gs, fs, p, e))
+            | Basic.NextFor      => (print "ERROR: NEXT without FOR\n"; (gs, fs, p, e))
+            | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (gs, fs, p, e))
+            | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
+            | Basic.Direct       => (print "ERROR: Command in program text\n"; (gs, fs, p, e))
+            | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
             | Basic.Quit         => raise Basic.Quit
-            | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (s, p, e))
+            | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (gs, fs, p, e))
 
    in case line of
         SOME s => (loop (exec s) handle x => ())

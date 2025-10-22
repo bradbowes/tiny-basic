@@ -112,34 +112,52 @@ struct
            Token.STRING s  => ((f s), c)
          | _               => raise (Basic.Syntax "expected string")
 
-      fun getVar (t, c) = case t of
-           Token.VAR v  => (v, c)
+      fun getVar t = case t of
+           Token.VAR v  => v
          | _            => raise (Basic.Syntax "expected variable")
 
-      fun getLetStm tk =
+      fun getLetStm (t, c) =
       let
-         val (v, c) = getVar tk
+         val v = getVar t
          val c = advance (Token.EQ, c, v ^ " is not a command")
          val (e, c) = getExpression (scan c)
       in
          (Ast.LET (v, e), c)
       end
 
-      fun getInputStm tk =
+      fun getForStm (t, c) =
+      let
+         val v = getVar t
+         val c = advance (Token.EQ, c, "expected \"=\"")
+         val (init, c) = getExpression (scan c)
+         val c = advance (Token.TO, c, "expected TO")
+         val (limit, c) = getExpression (scan c)
+      in
+         (Ast.FOR (v, init, limit, NONE), c)
+      end
+
+      fun getNextStm (t, c) =
+      let
+         val (t, c') = scan c
+      in
+         case t of
+              Token.VAR v  => (Ast.NEXT (SOME v), c')
+            | _            => (Ast.NEXT NONE, c)
+      end
+
+      fun getInputStm (t, c) =
       let
          fun loop (ls, c) =
          let
             val (t, c') = (scan c)
          in
             case t of
-                 Token.COMMA  => let val (v, c) = getVar (scan c')
-                                 in loop (v::ls, c) end
+                 Token.COMMA  => let val (t, c) = scan c'
+                                 in loop ((getVar t)::ls, c) end
                | _            => (Ast.INPUT (List.rev ls), c)
          end
-
-         val (v, c) = getVar tk
       in
-         loop ([v], c)
+         loop ([getVar t], c)
       end
 
       fun getRenumCmd c =
@@ -183,6 +201,8 @@ struct
          | Token.LET       => getLetStm (scan c)
          | Token.VAR _     => getLetStm (t, c)
          | Token.INPUT     => getInputStm (scan c)
+         | Token.FOR       => getForStm (scan c)
+         | Token.NEXT      => getNextStm (t, c)
          | Token.REM (s)   => (Ast.REM s, c)
          | Token.LIST      => (Ast.LIST, c)
          | Token.RUN       => (Ast.RUN, c)

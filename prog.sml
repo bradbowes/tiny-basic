@@ -40,13 +40,7 @@ struct
       val lines = mapLines (NumMap.empty, prog, start)
 
       fun newTarget n =
-      let
-         val opt = NumMap.lookup (lines, n)
-      in
-         case opt of
-              SOME n    => n
-            | NONE      => n
-      end
+         getOpt (NumMap.lookup (lines, n), n)
 
       fun fix s = case s of
            Ast.GOTO n      => Ast.GOTO (newTarget n)

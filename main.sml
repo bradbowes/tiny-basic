@@ -3,7 +3,7 @@ struct
 
    fun main _ = (
       print "MY TINY BASIC\n";
-      Repl.loop ([], [], StrMap.empty);
+      Repl.loop ([], [], [], StrMap.empty);
       0
    )
 
