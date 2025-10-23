@@ -112,7 +112,8 @@ struct
          case Char.toUpper(ch) of
               #"\^D" => (EOL, p)
             | #"\n"  => (EOL, p + 1)
-            | #"\r"  => if look 1 = #"\n" then (EOL, p + 2)
+            | #"\r"  => if look 1 = #"\n"
+                        then (EOL, p + 2)
                         else (EOL, p + 1)
             | #"+"   => (PLUS, p + 1)
             | #"-"   => (MINUS, p + 1)
@@ -150,7 +151,8 @@ struct
                            end
                         else getVar ([#"G"], p + 1)
             | #"F"   => getKeyword (FOR, "F", "OR", p + 1)
-            | #"I"   => if look 1 = #"F" then getKeyword (IF, "IF", "", p + 2)
+            | #"I"   => if look 1 = #"F"
+                        then getKeyword (IF, "IF", "", p + 2)
                         else  getKeyword (INPUT, "I", "NPUT", p + 1)
             | #"L"   => let val ch = look 1
                         in case ch of

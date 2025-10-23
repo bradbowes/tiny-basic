@@ -64,7 +64,7 @@ struct
          loop (getProduct tk)
       end
 
-      fun getPrintStm tk =
+      fun getPrintStm c =
       let
          fun getItem (t, c) = case t of
               Token.STRING s  => SOME (Ast.STRING s, c)
@@ -74,22 +74,22 @@ struct
             | Token.NUM _     => SOME (getExpression (t, c))
             | _               => NONE
 
-         fun loop (ls, (t, c)) =
+         fun loop (ls, c) =
          let
-            val (t, c') = scan c
+            val item = getItem (scan c)
          in
-            case getItem (t, c') of
+            case item of
                  SOME (x, c)  =>
                   let val (sep, c') = scan c
                   in case sep of
-                       Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, scan c')
-                     | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, scan c')
+                       Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, c')
+                     | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, c')
                      | _               => (Ast.PRINT (List.rev (Ast.ITEM (x, false)::ls)), c)
                   end
                | NONE         => (Ast.PRINT (List.rev ls), c)
          end
       in
-         loop ([], tk)
+         loop ([], c)
       end
 
       fun getCompare tk =
@@ -186,7 +186,7 @@ struct
       end
 
       fun getStatement (t, c) = case t of
-           Token.PRINT     => getPrintStm (t, c)
+           Token.PRINT     => getPrintStm c
          | Token.EOL       => (Ast.NUL, c)
          | Token.COLON     => (Ast.NUL, c)
          | Token.IF        => getIfStm (scan c)
