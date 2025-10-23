@@ -74,15 +74,20 @@ struct
             | Token.NUM _     => SOME (getExpression (t, c))
             | _               => NONE
 
-         fun loop (ls, (t, c)) = case getItem (t, c) of
-              SOME (x, c)  =>
-               let val (sep, c') = scan c
-               in case sep of
-                    Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, scan c')
-                  | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, scan c')
-                  | _               => (Ast.PRINT (List.rev (Ast.ITEM (x, false)::ls)), c)
-               end
-            | NONE         => (Ast.PRINT (List.rev ls), c)
+         fun loop (ls, (t, c)) =
+         let
+            val (t, c') = scan c
+         in
+            case getItem (t, c') of
+                 SOME (x, c)  =>
+                  let val (sep, c') = scan c
+                  in case sep of
+                       Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, scan c')
+                     | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, scan c')
+                     | _               => (Ast.PRINT (List.rev (Ast.ITEM (x, false)::ls)), c)
+                  end
+               | NONE         => (Ast.PRINT (List.rev ls), c)
+         end
       in
          loop ([], tk)
       end
@@ -181,7 +186,7 @@ struct
       end
 
       fun getStatement (t, c) = case t of
-           Token.PRINT     => getPrintStm (scan c)
+           Token.PRINT     => getPrintStm (t, c)
          | Token.EOL       => (Ast.NUL, c)
          | Token.COLON     => (Ast.NUL, c)
          | Token.IF        => getIfStm (scan c)
