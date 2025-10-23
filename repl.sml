@@ -180,12 +180,17 @@ struct
             | NEW          => []
             | LOAD _       => []
             | END          => []
+            | RUN          => []
             | _            => gs
 
          val fs' = case cmd of
               FOR (v, _, limit, inc)   => (v, eval limit,
                                           eval (getOpt (inc, NUM 1)),
                                           tl c)::fs
+            | NEW                      => []
+            | LOAD _                   => []
+            | END                      => []
+            | RUN                      => []
             | _                        => fs
 
       in

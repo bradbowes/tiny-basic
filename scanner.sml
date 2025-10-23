@@ -45,22 +45,22 @@ struct
             (VAR (String.implode (List.rev ls)), pos)
       end
 
-      fun getKeyword (tok, kw, pos) =
+      fun getKeyword (tok, kw1, kw2, pos) =
       let
-         val ls = String.explode kw
-         fun loop (ls, r, pos) =
+         fun loop (acc, rest, pos) =
          let
             val ch = Char.toUpper (getChar pos)
          in
-            case ls of
-                 []    => if Char.isAlphaNum ch then getVar (r, pos)
+            case rest of
+                 []    => if Char.isAlphaNum ch
+                          then getVar (acc, pos)
                           else (tok, pos)
-               | c::cs => if ch = c then
-                             loop (cs, c::r, pos + 1)
-                          else getVar (r, pos)
+               | c::cs => if ch = c
+                          then loop (c::acc, cs, pos + 1)
+                          else getVar (acc, pos)
          end
       in
-         loop (ls, [], pos)
+         loop (List.rev (String.explode kw1), String.explode kw2, pos)
       end
 
       fun getString pos =
@@ -107,13 +107,12 @@ struct
       fn pos =>
       let
          val (ch, p) = skipWhite pos
-         fun look n ch = Char.toUpper (getChar (p + n)) = ch
-         val peek = look 1
+         fun look n = Char.toUpper (getChar (p + n))
       in
          case Char.toUpper(ch) of
               #"\^D" => (EOL, p)
             | #"\n"  => (EOL, p + 1)
-            | #"\r"  => if peek #"\n" then (EOL, p + 2)
+            | #"\r"  => if look 1 = #"\n" then (EOL, p + 2)
                         else (EOL, p + 1)
             | #"+"   => (PLUS, p + 1)
             | #"-"   => (MINUS, p + 1)
@@ -122,10 +121,14 @@ struct
             | #"="   => (EQ, p + 1)
             | #"?"   => (PRINT, p + 1)
             | #"'"   => (getComment (p + 1))
-            | #"<"   => if peek #"=" then (LE, p + 2)
-                        else if peek #">" then (NE, p + 2)
-                        else (LT, p + 1)
-            | #">"   => if peek #"=" then (GE, p + 2)
+            | #"<"   => let val ch = look 1 in
+                        case ch of
+                             #"="   => (LE, p + 2)
+                           | #">"   => (NE, p + 2)
+                           | _      => (LT, p + 1)
+                        end
+            | #">"   => if look 1 = #"="
+                        then (GE, p + 2)
                         else (GT, p + 1)
             | #"("   => (LPAREN, p + 1)
             | #")"   => (RPAREN, p + 1)
@@ -133,42 +136,56 @@ struct
             | #";"   => (SEMICOLON, p + 1)
             | #":"   => (COLON, p + 1)
             | #"\""  => getString (p + 1)
-            | #"B"   => getKeyword (BYE, "BYE", p)
-            | #"C"   => getKeyword (CLEAR, "CLEAR", p)
-            | #"E"   => getKeyword (END, "END", p)
-            | #"G"   => if peek #"O" then
-                           if look 2 #"T" then getKeyword (GOTO, "GOTO", p)
-                           else if look 2 #"S" then getKeyword (GOSUB, "GOSUB", p)
-                           else if Char.isAlphaNum (getChar (p + 2)) then
-                              getVar ([#"O", #"G"], p + 2)
-                           else (GO, p + 2)
+            | #"B"   => getKeyword (BYE, "B", "YE", p + 1)
+            | #"C"   => getKeyword (CLEAR, "C", "LEAR", p + 1)
+            | #"E"   => getKeyword (END, "E", "ND", p + 1)
+            | #"G"   => if look 1 = #"O" then
+                           let val ch = look 2
+                           in case ch of
+                                #"T"   => getKeyword (GOTO, "GOT", "O", p + 3)
+                              | #"S"   => getKeyword (GOSUB, "GOS", "UB", p + 3)
+                              | _      => if Char.isAlphaNum ch
+                                          then getVar ([ch, #"O", #"G"], p + 3)
+                                          else (GO, p + 2)
+                           end
                         else getVar ([#"G"], p + 1)
-            | #"F"   => getKeyword (FOR, "FOR", p)
-            | #"I"   => if peek #"F" then
-                           getKeyword (IF, "IF", p)
-                        else  getKeyword (INPUT, "INPUT", p)
-            | #"L"   => if peek #"I" then getKeyword (LIST, "LIST", p)
-                        else if peek #"E" then getKeyword (LET, "LET", p)
-                        else getKeyword (LOAD, "LOAD", p)
-            | #"N"   => if peek #"E" then
-                           if look 2 #"X" then
-                              getKeyword (NEXT, "NEXT", p)
-                           else getKeyword (NEW, "NEW", p)
+            | #"F"   => getKeyword (FOR, "F", "OR", p + 1)
+            | #"I"   => if look 1 = #"F" then getKeyword (IF, "IF", "", p + 2)
+                        else  getKeyword (INPUT, "I", "NPUT", p + 1)
+            | #"L"   => let val ch = look 1
+                        in case ch of
+                             #"I"   => getKeyword (LIST, "LI", "ST", p + 2)
+                           | #"E"   => getKeyword (LET, "LE", "T", p + 2)
+                           | _      => getKeyword (LOAD, "L", "OAD", p + 1)
+                        end
+            | #"N"   => if look 1 = #"E" then
+                           if look 2 = #"X"
+                           then getKeyword (NEXT, "NEX", "T", p + 3)
+                           else getKeyword (NEW, "NE", "W", p + 2)
                         else getVar ([#"N"], p + 1)
-            | #"P"   => getKeyword (PRINT, "PRINT", p)
-            | #"R"   => if peek #"U" then getKeyword (RUN, "RUN", p)
-                        else if peek #"E" then
-                           if look 2 #"N" then getKeyword (RENUM, "RENUM", p)
-                           else if look 2 #"M"
-                                andalso not (Char.isAlphaNum (getChar (p + 3))) then
-                              getComment (p + 3)
-                           else getKeyword (RETURN, "RETURN", p)
-                        else getVar ([#"R"], p + 1)
-            | #"S"   => if peek #"A" then getKeyword (SAVE, "SAVE", p)
-                        else if peek #"T" then getKeyword (STEP, "STEP", p)
-                        else getKeyword (SUB, "SUB", p)
-            | #"T"   => if peek #"H" then getKeyword (THEN, "THEN", p)
-                        else getKeyword (TO, "TO", p)
+            | #"P"   => getKeyword (PRINT, "P", "RINT", p + 1)
+            | #"R"   => let val ch = look 1
+                        in case ch of
+                             #"U"   => getKeyword (RUN, "RU", "N", p + 2)
+                           | #"E"   => let val ch = look 2 in
+                                       case ch of
+                                            #"N"   => getKeyword (RENUM, "REN", "UM", p + 3)
+                                          | #"M"   => if not (Char.isAlphaNum (look 3))
+                                                      then getComment (p + 3)
+                                                      else getVar ([#"M", #"E", #"R"], p + 3)
+                                          | _      => getKeyword (RETURN, "RE", "TURN", p + 2)
+                                       end
+                           |_       => getVar ([#"R"], p + 1)
+                        end
+            | #"S"   => let val ch = look 1 in
+                        case ch of
+                             #"A"   => getKeyword (SAVE, "SA", "VE", p + 2)
+                           | #"T"   => getKeyword (STEP, "ST", "EP", p + 2)
+                           | _      => getKeyword (SUB, "S", "UB", p + 1)
+                        end
+            | #"T"   => if look 1 = #"H"
+                        then getKeyword (THEN, "TH", "EN", p + 2)
+                        else getKeyword (TO, "T", "O", p + 1)
             | _      =>
                if Char.isDigit ch then getNumber p
                else if Char.isAlpha ch then getVar ([Char.toUpper ch], p + 1)
