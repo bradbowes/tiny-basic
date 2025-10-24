@@ -39,17 +39,15 @@ struct
             else sp (s ^ " ", n - 1)
 
          fun pad s =
-            if s = "" then ""
-            else
-               let
-                  val sz = String.size s + 1
-                  val n = 12 - (Int.rem (sz, 12))
-               in
-                  sp (s, n)
-               end
+            let
+               val sz = String.size s
+               val n = 12 - (Int.rem (sz, 12))
+            in
+               sp (s, n)
+            end
 
          fun prItems (ls, s) = case ls of
-              []              => s ^ "\n"
+              []              => "\n"
             | ITEM (i, j)::[] => s ^ (output i) ^ (if j then "" else "\n")
             | ITEM (i, j)::xs => prItems (xs,
                                           let val s = s ^ output i
