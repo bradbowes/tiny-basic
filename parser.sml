@@ -137,8 +137,12 @@ struct
          val (init, c) = getExpression (scan c)
          val c = advance (Token.TO, c, "expected TO")
          val (limit, c) = getExpression (scan c)
+         val (t, c') = scan c
       in
-         (Ast.FOR (v, init, limit, NONE), c)
+         case t of
+              Token.STEP   => let val (inc, c) = getExpression (scan c')
+                              in (Ast.FOR (v, init, limit, SOME inc), c) end
+            | _            => (Ast.FOR (v, init, limit, NONE), c)
       end
 
       fun getNextStm (t, c) =

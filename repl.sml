@@ -120,7 +120,30 @@ struct
          loop []
       end
 
-      fun nextIncrement opt =
+      fun execFor (var, init, limit, inc) =
+      let
+         fun skipNext (ls, level) = case ls of
+              []           => raise Basic.ForNext
+            | (FOR _)::xs  => skipNext (xs, level + 1)
+            | (NEXT x)::xs => if level = 0 then
+                                 if var = getOpt(x, var) then xs
+                                 else raise Basic.ForNext
+                              else skipNext (xs, level - 1)
+            | _::xs        => skipNext (xs, level)
+
+         val init' = eval init
+         val limit' = eval limit
+         val inc' = case inc of SOME x => eval x | NONE => 1
+         val enterLoop = (if inc' < 0 then op< else op>) (limit', init')
+
+         val c' = if enterLoop then tl c else skipNext (tl c, 0)
+         val e' = StrMap.insert (e, var, init')
+         val fs' = if enterLoop then (var, limit', inc', tl c)::fs else fs
+      in
+         (c', gs, fs', p, e')
+      end
+
+      fun execNext opt =
       let
          val (v, limit, inc, cont) = case fs of
               x::xs  => x
@@ -129,9 +152,10 @@ struct
       in
          if v = v' then
             let
-               val n = getOpt (StrMap.lookup (e, v), 0) + inc
-               val c' = if n <= limit then cont else tl c
-               val fs' = if n <= limit then fs else tl fs
+               val n = getOpt (StrMap.lookup (e, v), limit) + inc
+               val more = (if inc < 0 then op>= else op<=) (n, limit)
+               val c' = if more then cont else tl c
+               val fs' = if more then fs else tl fs
                val e' = StrMap.insert (e, v, n)
             in
                (c', gs, fs', p, e')
@@ -156,8 +180,6 @@ struct
             | NEW          => StrMap.empty
             | LOAD _       => StrMap.empty
             | INPUT ls     => input ls
-            | FOR
-              (v, i, _, _) => StrMap.insert (e, v, eval i)
             | _            => e
 
          val c' = case cmd of
@@ -184,10 +206,7 @@ struct
             | _            => gs
 
          val fs' = case cmd of
-              FOR (v, _, limit, inc)   => (v, eval limit,
-                                          eval (getOpt (inc, NUM 1)),
-                                          tl c)::fs
-            | NEW                      => []
+              NEW                      => []
             | LOAD _                   => []
             | END                      => []
             | RUN                      => []
@@ -205,7 +224,8 @@ struct
 
          case cmd of
               IF (x, y)    => if compare x then exec y else (c', gs', fs', p', e')
-            | NEXT x       => nextIncrement x
+            | FOR x        => execFor x
+            | NEXT x       => execNext x
             | _            => (c', gs', fs', p', e')
 
       end
@@ -231,6 +251,7 @@ struct
             | Basic.NoImpl       => (print "FEATURE NOT IMPLEMENTED\n"; (gs, fs, p, e))
             | Basic.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (gs, fs, p, e))
             | Basic.NextFor      => (print "ERROR: NEXT without FOR\n"; (gs, fs, p, e))
+            | Basic.ForNext      => (print "ERROR: FOR without NEXT\n"; (gs, fs, p, e))
             | Basic.NoLine       => (print "ERROR: Line number undefined\n"; (gs, fs, p, e))
             | Basic.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
             | Basic.Direct       => (print "ERROR: Command in program text\n"; (gs, fs, p, e))
