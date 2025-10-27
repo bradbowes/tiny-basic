@@ -24,12 +24,12 @@ struct
       loop ([], prog)
    end
 
-   fun goto (continue, ln) = case continue of
+   fun getContinuation (rest, ln) = case rest of
         []           => raise Basic.NoLine
       | (l, _)::xs   =>
             if l > ln then raise Basic.NoLine
-            else if l = ln then map #2 continue
-            else goto (xs, ln)
+            else if l = ln then map #2 rest
+            else getContinuation (xs, ln)
 
    fun renum (prog, start, inc) =
    let

@@ -12,14 +12,14 @@ struct
       end
 
       fun getAtom (t, c) = case t of
-           Token.NUM (n)   => ((Ast.NUM n), c)
-         | Token.VAR (v)   => ((Ast.VAR v), c)
-         | Token.LPAREN    =>
+           Token.NUM n  => ((Ast.NUM n), c)
+         | Token.VAR v  => ((Ast.VAR v), c)
+         | Token.LPAREN =>
                let
                   val (e, c) = getExpression (scan c)
-                  val c' = advance (Token.RPAREN, c, "expected \")\"")
+                  val c = advance (Token.RPAREN, c, "expected \")\"")
                in
-                  (e, c')
+                  (e, c)
                end
          | _               => raise (Basic.Syntax "expected numeric expression")
 
@@ -212,7 +212,7 @@ struct
          | Token.INPUT     => getInputStm (scan c)
          | Token.FOR       => getForStm (scan c)
          | Token.NEXT      => getNextStm (t, c)
-         | Token.REM (s)   => (Ast.REM s, c)
+         | Token.REM s     => (Ast.REM s, c)
          | Token.LIST      => (Ast.LIST, c)
          | Token.RUN       => (Ast.RUN, c)
          | Token.BYE       => (Ast.BYE, c)
@@ -228,6 +228,7 @@ struct
          in
             case t of
                  Token.COLON  => loop (s::ls, (scan c'))
+               | Token.REM x  => (Ast.COMP (Ast.REM x::s::ls), c')
                | Token.EOL    => (case ls of
                                       []     => (s, c)
                                     | x::xs  => (Ast.COMP (s::ls), c) )

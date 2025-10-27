@@ -60,6 +60,12 @@ struct
                                  s ^ (toString i) ^ (if j then "; " else ", "))
          | _               => raise (Basic.Bug "expected print item")
 
+      fun prCompound (ls, s) = case ls of
+           []           => s
+         | x::REM r::_  => s ^ toString x ^ " '" ^ r
+         | x::[]        => s ^ toString x
+         | x::xs        => prCompound (xs, s ^ toString x ^ " : ")
+
    in
       case a of
            NUM n        => Int.toString n
@@ -97,7 +103,7 @@ struct
          | RUN          => "RUN"
          | BYE          => "BYE"
          | RENUM (m, n) => "RENUM " ^ Int.toString m ^ ", " ^ Int.toString n
-         | COMP ls      => String.concatWith ": " (map toString (List.rev ls))
+         | COMP ls      => prCompound (List.rev ls, "")
          | _            => ""
    end
 end
