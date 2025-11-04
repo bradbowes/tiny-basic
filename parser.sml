@@ -8,7 +8,7 @@ struct
       let
          val (t, c') = scan c
       in
-         if t = tok then c' else raise (Basic.Syntax err)
+         if t = tok then c' else raise (BasicExn.Syntax err)
       end
 
       fun getAtom (t, c) = case t of
@@ -21,7 +21,7 @@ struct
                in
                   (e, c)
                end
-         | _               => raise (Basic.Syntax "expected numeric expression")
+         | _               => raise (BasicExn.Syntax "expected numeric expression")
 
       and getUnary (t, c) = case t of
            Token.MINUS  => let val (a, c) = getAtom (scan c)
@@ -103,7 +103,7 @@ struct
             | Token.GE => Ast.GE
             | Token.LT => Ast.LT
             | Token.LE => Ast.LE
-            | _        => raise (Basic.Syntax "expected comparison")
+            | _        => raise (BasicExn.Syntax "expected comparison")
          val (right, c) = getExpression (scan c)
       in
          (node (left, right), c)
@@ -111,15 +111,15 @@ struct
 
       fun getGoStm f (t, c) = case t of
            Token.NUM n  => ((f n), c)
-         | _            => raise (Basic.Syntax "expected line number")
+         | _            => raise (BasicExn.Syntax "expected line number")
 
       fun getFileCmd f (file, c) = case file of
            Token.STRING s  => ((f s), c)
-         | _               => raise (Basic.Syntax "expected string")
+         | _               => raise (BasicExn.Syntax "expected string")
 
       fun getVar t = case t of
            Token.VAR v  => v
-         | _            => raise (Basic.Syntax "expected variable")
+         | _            => raise (BasicExn.Syntax "expected variable")
 
       fun getLetStm (t, c) =
       let
@@ -197,7 +197,7 @@ struct
          | Token.GO        => let val (t, c) = scan c in case t of
                                    Token.TO  => getGoStm Ast.GOTO (scan c)
                                  | Token.SUB => getGoStm Ast.GOSUB (scan c)
-                                 | _         => raise (Basic.Syntax "expected GOTO or GOSUB")
+                                 | _         => raise (BasicExn.Syntax "expected GOTO or GOSUB")
                               end
          | Token.GOTO      => getGoStm Ast.GOTO (scan c)
          | Token.GOSUB     => getGoStm Ast.GOSUB (scan c)
@@ -217,7 +217,7 @@ struct
          | Token.RUN       => (Ast.RUN, c)
          | Token.BYE       => (Ast.BYE, c)
          | Token.RENUM     => getRenumCmd c
-         | _               => raise (Basic.Syntax "expected statement")
+         | _               => raise (BasicExn.Syntax "expected statement")
 
       and getCompoundStm tk =
       let
@@ -232,7 +232,7 @@ struct
                | Token.EOL    => (case ls of
                                       []     => (s, c)
                                     | x::xs  => (Ast.COMP (s::ls), c) )
-               | _            => raise (Basic.Syntax "expected end of line")
+               | _            => raise (BasicExn.Syntax "expected end of line")
          end
       in
          loop ([], tk)
@@ -255,8 +255,8 @@ struct
                let
                   val (s, _) = getCompoundStm (scan c)
                   handle
-                     Basic.Syntax msg => raise
-                        (Basic.Syntax (msg ^ " in " ^ Int.toString n))
+                     BasicExn.Syntax msg => raise
+                        (BasicExn.Syntax (msg ^ " in " ^ Int.toString n))
                in
                   case s of
                        Ast.NUL   => Ast.DEL n
@@ -274,7 +274,7 @@ struct
 
       fun getNumber t = case t of
            Token.NUM n  => n
-         | _            => raise (Basic.Input)
+         | _            => raise (BasicExn.Input)
 
       fun getValue (t, c) = case t of
            Token.MINUS     => let
@@ -293,7 +293,7 @@ struct
          case t of
               Token.COMMA  => getValues (n::ls, scan c)
             | Token.EOL    => List.rev (n::ls)
-            | _            => raise (Basic.Input)
+            | _            => raise (BasicExn.Input)
       end
 
    in

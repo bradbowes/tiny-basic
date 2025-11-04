@@ -1,7 +1,6 @@
-structure Basic =
+structure BasicExn =
 struct
    exception Syntax of string
-   exception NoImpl
    exception Bug of string
    exception RetGosub
    exception NextFor

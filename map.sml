@@ -36,14 +36,14 @@ struct
 
       fun rotateLeft (NODE (l, v, NODE (rl, rv, rr, _), _)) =
             newNode (newNode (l, v, rl), rv, rr)
-        | rotateLeft _ = raise (Basic.Bug "rotateLeft")
+        | rotateLeft _ = raise (BasicExn.Bug "rotateLeft")
 
       fun rotateRight (NODE (NODE (ll, lv, lr, _), v, r, _)) =
             newNode (ll, lv, newNode (lr, v, r))
-        | rotateRight _ = raise (Basic.Bug "rotateRight")
+        | rotateRight _ = raise (BasicExn.Bug "rotateRight")
 
       fun getKey (NODE (_, (k, _), _, _)) = k
-        | getKey _ = raise (Basic.Bug "getKey")
+        | getKey _ = raise (BasicExn.Bug "getKey")
 
       val t = case tbl of
          LEAF => NODE (LEAF, (key, value), LEAF, 1)
@@ -77,7 +77,7 @@ struct
                end
             else
                t
-       | _ => raise (Basic.Bug "insert")
+       | _ => raise (BasicExn.Bug "insert")
    end
 
    fun lookup (tbl, key) =

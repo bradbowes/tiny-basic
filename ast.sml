@@ -58,7 +58,7 @@ struct
          | ITEM (i, j)::xs => prItems (
                                  xs,
                                  s ^ (toString i) ^ (if j then "; " else ", "))
-         | _               => raise (Basic.Bug "expected print item")
+         | _               => raise (BasicExn.Bug "expected print item")
 
       fun prCompound (ls, s) = case ls of
            []           => s

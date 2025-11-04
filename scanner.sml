@@ -79,7 +79,7 @@ struct
                      (STRING (String.implode (List.rev ls)), p + 1)
                end
             else if Char.contains "\n\r\^D" ch then
-               raise (Basic.Syntax "Unterminated string")
+               raise (BasicExn.Syntax "Unterminated string")
             else loop (ch::ls, p + 1)
          end
       in
@@ -191,7 +191,7 @@ struct
             | _      =>
                if Char.isDigit ch then getNumber p
                else if Char.isAlpha ch then getVar ([Char.toUpper ch], p + 1)
-               else raise (Basic.Syntax "Illegal character")
+               else raise (BasicExn.Syntax "Illegal character")
       end
    end
 

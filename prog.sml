@@ -25,9 +25,9 @@ struct
    end
 
    fun getContinuation (rest, ln) = case rest of
-        []           => raise Basic.NoLine
+        []           => raise BasicExn.NoLine
       | (l, _)::xs   =>
-            if l > ln then raise Basic.NoLine
+            if l > ln then raise BasicExn.NoLine
             else if l = ln then map #2 rest
             else getContinuation (xs, ln)
 
