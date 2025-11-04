@@ -175,56 +175,17 @@ struct
          else raise Basic.NextFor
       end
 
-      fun exec cmd =
+      fun applyCompound ls =
       let
-         val p' = case cmd of
-              LINE ln      => Prog.insert (p, ln)
-            | DEL ln       => Prog.delete (p, ln)
-            | NEW          => []
-            | LOAD file    => load file
-            | RENUM (x, y) => Prog.renum (p, x, y)
-            | _            => p
-
-         val e' = case cmd of
-              LET (x, y)   => StrMap.insert (e, x, eval y)
-            | CLEAR        => StrMap.empty
-            | RUN          => StrMap.empty
-            | NEW          => StrMap.empty
-            | LOAD _       => StrMap.empty
-            | INPUT ls     => input ls
-            | _            => e
-
-         val c' = case cmd of
-              GOTO n       => Prog.getContinuation (p, n)
-            | GOSUB n      => Prog.getContinuation (p, n)
-            | RETURN       => if null gs then raise Basic.RetGosub
-                              else hd gs
-            | COMP ls      => let fun loop (c, ls) =
-                                 case ls of [] => c | x::xs => loop (x::c, xs)
-                              in loop (tl c, ls) end
-            | RUN          => map #2 p
-            | END          => []
-            | NEW          => []
-            | LOAD _       => []
-            | _            => tl c
-
-         val gs' = case cmd of
-              GOSUB _      => (tl c)::gs
-            | RETURN       => tl gs
-            | NEW          => []
-            | LOAD _       => []
-            | END          => []
-            | RUN          => []
-            | _            => gs
-
-         val fs' = case cmd of
-              NEW                      => []
-            | LOAD _                   => []
-            | END                      => []
-            | RUN                      => []
-            | _                        => fs
-
+         fun loop (c, ls) = case ls of
+              nil    => c
+            | x::xs  => loop (x::c, xs)
       in
+         loop (tl c, ls)
+      end
+
+      fun exec cmd = (
+
          case cmd of
               PRINT ls     => pr ls
             | LIST         => list TextIO.stdOut
@@ -235,12 +196,26 @@ struct
             ;
 
          case cmd of
-              IF (x, y)    => if compare x then exec y else (c', gs', fs', p', e')
+              IF (x, y)    => if compare x then exec y else (tl c, gs, fs, p, e)
+            | LINE ln      => (tl c, gs, fs, Prog.insert (p, ln), e)
+            | DEL ln       => (tl c, gs, fs, Prog.delete (p, ln), e)
+            | NEW          => ([], [], [], [], StrMap.empty)
+            | LOAD file    => ([], [], [], load file, StrMap.empty)
+            | RENUM (x, y) => ([], [], [], Prog.renum (p, x, y), e)
+            | LET (x, y)   => (tl c, gs, fs, p, StrMap.insert (e, x, eval y))
+            | CLEAR        => (tl c, [], [], p, StrMap.empty)
+            | RUN          => (map #2 p, [], [], p, StrMap.empty)
+            | INPUT ls     => (tl c, gs, fs, p, input ls)
+            | GOTO n       => (Prog.getContinuation (p, n), gs, fs, p, e)
+            | GOSUB n      => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
+            | RETURN       => (if null gs then raise Basic.RetGosub else hd gs,
+                               tl gs, fs, p, e)
+            | COMP ls      => (applyCompound ls, gs, fs, p, e)
+            | END          => ([], [], [], p, e)
             | FOR x        => execFor x
             | NEXT x       => execNext x
-            | _            => (c', gs', fs', p', e')
-
-      end
+            | _            => (tl c, gs, fs, p, e)
+      )
 
    in case c of
         []     => (gs, fs, p, e)
