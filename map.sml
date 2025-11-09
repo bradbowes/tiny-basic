@@ -80,8 +80,7 @@ struct
        | _ => raise (BasicExn.Bug "insert")
    end
 
-   fun lookup (tbl, key) =
-      case tbl of
+   fun lookup (tbl, key) = case tbl of
          LEAF => NONE
        | NODE (l, (k, v), r, _) =>
             if Key.lt (key, k) then

@@ -39,12 +39,12 @@ struct
             else sp (s ^ " ", n - 1)
 
          fun pad s =
-            let
-               val sz = String.size s
-               val n = 12 - (Int.rem (sz, 12))
-            in
-               sp (s, n)
-            end
+         let
+            val sz = String.size s
+            val n = 12 - (Int.rem (sz, 12))
+         in
+            sp (s, n)
+         end
 
          fun prItems (ls, s) = case ls of
               []              => "\n"
