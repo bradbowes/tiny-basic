@@ -256,7 +256,7 @@ struct
                   val (s, _) = getCompoundStm (scan c)
                   handle
                      BasicExn.Syntax msg => raise
-                        (BasicExn.Syntax (msg ^ " in " ^ Int.toString n))
+                        (BasicExn.Syntax (msg ^ " in line " ^ Int.toString n))
                in
                   case s of
                        Ast.NUL   => Ast.DEL n

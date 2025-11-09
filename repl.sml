@@ -75,7 +75,7 @@ struct
             "INPUT ERROR: expected " ^ Int.toString len ^
             (if len > 1 then " comma separated" else "") ^
             " number" ^ (if len > 1 then "s" else "") ^
-            ". Try again...\n"
+            ". Try again..."
          end
 
          fun try () =
@@ -87,7 +87,9 @@ struct
                   TextIO.inputLine TextIO.stdIn
                )
             in
-               getOpt (l, "")
+               case l of
+                    SOME s => s
+                  | NONE   => (print "\n"; raise BasicExn.Quit)
             end
 
             val vals = Parser.parseInput line
@@ -103,9 +105,7 @@ struct
          end
       in
          try ()
-         handle
-              BasicExn.Input     => (print msg; input vars)
-            | BasicExn.Syntax _  => (print msg; input vars)
+         handle BasicExn.Input => (prErr msg; input vars)
       end
 
       fun load file =
@@ -204,7 +204,7 @@ struct
             | RENUM (x, y) => ([], [], [], Prog.renum (p, x, y), e)
             | LET (x, y)   => (tl c, gs, fs, p, StrMap.insert (e, x, eval y))
             | CLEAR        => (tl c, [], [], p, StrMap.empty)
-            | RUN          => (map #2 p, [], [], p, StrMap.empty)
+            | RUN          => (Prog.getCode p, [], [], p, StrMap.empty)
             | INPUT ls     => (tl c, gs, fs, p, input ls)
             | GOTO n       => (Prog.getContinuation (p, n), gs, fs, p, e)
             | GOSUB n      => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
@@ -233,17 +233,17 @@ struct
       fun exec input =
          interp ([Parser.parse input], gs, fs, p, e)
          handle
-              BasicExn.Syntax msg   => (print ("SYNTAX ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
-            | BasicExn.Input        => (print "INPUT ERROR\n"; (gs, fs, p, e))
-            | BasicExn.RetGosub     => (print "ERROR: RETURN without GOSUB\n"; (gs, fs, p, e))
-            | BasicExn.NextFor      => (print "ERROR: NEXT without FOR\n"; (gs, fs, p, e))
-            | BasicExn.ForNext      => (print "ERROR: FOR without NEXT\n"; (gs, fs, p, e))
-            | BasicExn.NoLine       => (print "ERROR: Line number undefined\n"; (gs, fs, p, e))
-            | BasicExn.Bug msg      => (print ("COMPILER ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
-            | BasicExn.Direct       => (print "ERROR: Command in program text\n"; (gs, fs, p, e))
-            | Fail msg           => (print ("ERROR: " ^ msg ^ "\n"); (gs, fs, p, e))
+              BasicExn.Syntax msg   => (prErr ("SYNTAX ERROR: " ^ msg); (gs, fs, p, e))
+            | BasicExn.Input        => (prErr "INPUT ERROR"; (gs, fs, p, e))
+            | BasicExn.RetGosub     => (prErr "ERROR: RETURN without GOSUB"; (gs, fs, p, e))
+            | BasicExn.NextFor      => (prErr "ERROR: NEXT without FOR"; (gs, fs, p, e))
+            | BasicExn.ForNext      => (prErr "ERROR: FOR without NEXT"; (gs, fs, p, e))
+            | BasicExn.NoLine       => (prErr "ERROR: Line number undefined"; (gs, fs, p, e))
+            | BasicExn.Bug msg      => (prErr ("COMPILER ERROR: " ^ msg); (gs, fs, p, e))
+            | BasicExn.Direct       => (prErr "ERROR: Command in program text"; (gs, fs, p, e))
+            | Fail msg              => (prErr ("ERROR: " ^ msg); (gs, fs, p, e))
             | BasicExn.Quit         => raise BasicExn.Quit
-            | x                  => (print ("ERROR: " ^ (exnMessage x) ^ "\n"); (gs, fs, p, e))
+            | x                     => (prErr ("ERROR: " ^ (exnMessage x)); (gs, fs, p, e))
 
    in case line of
         SOME s => (loop (exec s) handle x => ())

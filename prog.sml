@@ -24,11 +24,14 @@ struct
       loop ([], prog)
    end
 
+   fun getCode prog =
+      map (fn (l, stm) => stm) prog
+
    fun getContinuation (rest, ln) = case rest of
         []           => raise BasicExn.NoLine
       | (l, _)::xs   =>
             if l > ln then raise BasicExn.NoLine
-            else if l = ln then map #2 rest
+            else if l = ln then getCode rest
             else getContinuation (xs, ln)
 
    fun renum (prog, start, inc) =

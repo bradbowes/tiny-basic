@@ -12,3 +12,4 @@ struct
    exception Input
 end
 
+fun prErr s = (TextIO.output (TextIO.stdErr, s ^ "\n"); TextIO.flushOut TextIO.stdErr)
