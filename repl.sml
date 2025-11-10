@@ -1,6 +1,6 @@
 structure Repl : sig
-   val loop : Ast.node list list *
-    (string * int * int * Ast.node list) list *
+   val loop : (int option * Ast.node) list list *
+    (string * int * int * (int option * Ast.node) list) list *
    (int * Ast.node) list * int StrMap.map -> unit
 end  =
 struct
@@ -115,17 +115,18 @@ struct
          fun loop prog =
          let
             val line = TextIO.inputLine  input
-         in case line of
-              SOME s =>
-                  let val stm = Parser.parse s
-                  in case stm of
-                       LINE x => loop (Prog.insert (prog, x))
-                     | NUL    => loop prog
-                     | _      => (
-                           TextIO.closeIn input;
-                           raise BasicExn.Direct )
-                  end
-            | NONE   => (TextIO.closeIn input; prog)
+         in
+            case line of
+                 SOME s =>
+                     let val stm = Parser.parse s
+                     in case stm of
+                          LINE x => loop (Prog.insert (prog, x))
+                        | NUL    => loop prog
+                        | _      => (
+                              TextIO.closeIn input;
+                              raise BasicExn.Direct )
+                     end
+               | NONE   => (TextIO.closeIn input; prog)
          end
 
       in
@@ -135,13 +136,13 @@ struct
       fun execFor (var, init, limit, inc) =
       let
          fun skipNext (ls, level) = case ls of
-              []           => raise BasicExn.ForNext
-            | (FOR _)::xs  => skipNext (xs, level + 1)
-            | (NEXT x)::xs => if level = 0 then
-                                 if var = getOpt(x, var) then xs
-                                 else raise BasicExn.ForNext
-                              else skipNext (xs, level - 1)
-            | _::xs        => skipNext (xs, level)
+              []              => raise BasicExn.ForNext
+            | (_, FOR _)::xs  => skipNext (xs, level + 1)
+            | (_, NEXT x)::xs => if level = 0 then
+                                    if var = getOpt(x, var) then xs
+                                    else raise BasicExn.ForNext
+                                 else skipNext (xs, level - 1)
+            | _::xs           => skipNext (xs, level)
 
          val init' = eval init
          val limit' = eval limit
@@ -179,13 +180,12 @@ struct
       let
          fun loop (c, ls) = case ls of
               nil    => c
-            | x::xs  => loop (x::c, xs)
+            | x::xs  => loop ((NONE, x)::c, xs)
       in
          loop (tl c, ls)
       end
 
-      fun exec cmd = (
-
+      fun exec (line, cmd) = (
          case cmd of
               PRINT ls     => pr ls
             | LIST         => list TextIO.stdOut
@@ -196,7 +196,7 @@ struct
             ;
 
          case cmd of
-              IF (x, y)    => if compare x then exec y else (tl c, gs, fs, p, e)
+              IF (x, y)    => if compare x then exec (line, y) else (tl c, gs, fs, p, e)
             | LINE ln      => (tl c, gs, fs, Prog.insert (p, ln), e)
             | DEL ln       => (tl c, gs, fs, Prog.delete (p, ln), e)
             | NEW          => ([], [], [], [], StrMap.empty)
@@ -215,7 +215,17 @@ struct
             | FOR x        => execFor x
             | NEXT x       => execNext x
             | _            => (tl c, gs, fs, p, e)
-      )
+      ) handle
+           BasicExn.RetGosub     => raise (BasicExn.Runtime ("RETURN without GOSUB", line))
+         | BasicExn.NextFor      => raise (BasicExn.Runtime ("NEXT without FOR", line))
+         | BasicExn.ForNext      => raise (BasicExn.Runtime ("FOR without NEXT", line))
+         | BasicExn.NoLine       => raise (BasicExn.Runtime ("Undefined line number", line))
+         | BasicExn.Bug msg      => raise (BasicExn.Runtime ("Interpreter bug: " ^ msg, line))
+         | BasicExn.Direct       => raise (BasicExn.Runtime (
+                                    "Direct command in program text", line))
+         | BasicExn.Syntax msg   => raise (BasicExn.Syntax msg)
+         | BasicExn.Quit         => raise BasicExn.Quit
+         | x                     => raise (BasicExn.Runtime (exnMessage x, line))
 
    in case c of
         []     => (gs, fs, p, e)
@@ -231,22 +241,16 @@ struct
       )
 
       fun exec input =
-         interp ([Parser.parse input], gs, fs, p, e)
+         interp ([(NONE, Parser.parse input)], gs, fs, p, e)
          handle
               BasicExn.Syntax msg   => (prErr ("SYNTAX ERROR: " ^ msg); (gs, fs, p, e))
-            | BasicExn.Input        => (prErr "INPUT ERROR"; (gs, fs, p, e))
-            | BasicExn.RetGosub     => (prErr "ERROR: RETURN without GOSUB"; (gs, fs, p, e))
-            | BasicExn.NextFor      => (prErr "ERROR: NEXT without FOR"; (gs, fs, p, e))
-            | BasicExn.ForNext      => (prErr "ERROR: FOR without NEXT"; (gs, fs, p, e))
-            | BasicExn.NoLine       => (prErr "ERROR: Line number undefined"; (gs, fs, p, e))
-            | BasicExn.Bug msg      => (prErr ("COMPILER ERROR: " ^ msg); (gs, fs, p, e))
-            | BasicExn.Direct       => (prErr "ERROR: Command in program text"; (gs, fs, p, e))
-            | Fail msg              => (prErr ("ERROR: " ^ msg); (gs, fs, p, e))
-            | BasicExn.Quit         => raise BasicExn.Quit
-            | x                     => (prErr ("ERROR: " ^ (exnMessage x)); (gs, fs, p, e))
+            | BasicExn.Runtime (msg, ln)  => (
+                  prErr ("RUNTIME ERROR: " ^ msg ^
+                        (case ln of SOME n => " in line " ^ (Int.toString n) | NONE => ""));
+                  (gs, fs, p, e) )
 
    in case line of
-        SOME s => (loop (exec s) handle x => ())
+        SOME s => (loop (exec s) handle BasicExn.Quit => ())
       | NONE   => (print "\n"; ())
    end
 

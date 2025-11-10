@@ -25,7 +25,7 @@ struct
    end
 
    fun getCode prog =
-      map (fn (l, stm) => stm) prog
+      map (fn (l, stm) => (SOME l, stm)) prog
 
    fun getContinuation (rest, ln) = case rest of
         []           => raise BasicExn.NoLine

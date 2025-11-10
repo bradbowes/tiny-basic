@@ -10,6 +10,7 @@ struct
    exception Interrupt
    exception Quit
    exception Input
+   exception Runtime of string * int option
 end
 
 fun prErr s = (TextIO.output (TextIO.stdErr, s ^ "\n"); TextIO.flushOut TextIO.stdErr)
