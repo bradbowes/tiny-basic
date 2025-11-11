@@ -66,7 +66,7 @@ struct
          app outputLine p
       end
 
-      fun input vars =
+      fun input (prompt, vars) =
       let
          val msg =
          let
@@ -83,7 +83,7 @@ struct
             val line =
             let
                val l = (
-                  print "? ";
+                  print (getOpt (prompt, "? "));
                   TextIO.inputLine TextIO.stdIn
                )
             in
@@ -105,7 +105,7 @@ struct
          end
       in
          try ()
-         handle BasicExn.Input => (prErr msg; input vars)
+         handle BasicExn.Input => (prErr msg; input (prompt, vars))
       end
 
       fun load file =
@@ -196,25 +196,25 @@ struct
             ;
 
          case cmd of
-              IF (x, y)    => if compare x then exec (line, y) else (tl c, gs, fs, p, e)
-            | LINE ln      => (tl c, gs, fs, Prog.insert (p, ln), e)
-            | DEL ln       => (tl c, gs, fs, Prog.delete (p, ln), e)
-            | NEW          => ([], [], [], [], StrMap.empty)
-            | LOAD file    => ([], [], [], load file, StrMap.empty)
-            | RENUM (x, y) => ([], [], [], Prog.renum (p, x, y), e)
-            | LET (x, y)   => (tl c, gs, fs, p, StrMap.insert (e, x, eval y))
-            | CLEAR        => (tl c, [], [], p, StrMap.empty)
-            | RUN          => (Prog.getCode p, [], [], p, StrMap.empty)
-            | INPUT ls     => (tl c, gs, fs, p, input ls)
-            | GOTO n       => (Prog.getContinuation (p, n), gs, fs, p, e)
-            | GOSUB n      => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
-            | RETURN       => (if null gs then raise BasicExn.RetGosub else hd gs,
-                               tl gs, fs, p, e)
-            | COMP ls      => (applyCompound ls, gs, fs, p, e)
-            | END          => ([], [], [], p, e)
-            | FOR x        => execFor x
-            | NEXT x       => execNext x
-            | _            => (tl c, gs, fs, p, e)
+              IF (x, y)       => if compare x then exec (line, y) else (tl c, gs, fs, p, e)
+            | LINE ln         => (tl c, gs, fs, Prog.insert (p, ln), e)
+            | DEL ln          => (tl c, gs, fs, Prog.delete (p, ln), e)
+            | NEW             => ([], [], [], [], StrMap.empty)
+            | LOAD file       => ([], [], [], load file, StrMap.empty)
+            | RENUM (x, y)    => ([], [], [], Prog.renum (p, x, y), e)
+            | LET (x, y)      => (tl c, gs, fs, p, StrMap.insert (e, x, eval y))
+            | CLEAR           => (tl c, [], [], p, StrMap.empty)
+            | RUN             => (Prog.getCode p, [], [], p, StrMap.empty)
+            | INPUT (pr, ls)  => (tl c, gs, fs, p, input (pr, ls))
+            | GOTO n          => (Prog.getContinuation (p, n), gs, fs, p, e)
+            | GOSUB n         => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
+            | RETURN          => (if null gs then raise BasicExn.RetGosub else hd gs,
+                                    tl gs, fs, p, e)
+            | COMP ls         => (applyCompound ls, gs, fs, p, e)
+            | END             => ([], [], [], p, e)
+            | FOR x           => execFor x
+            | NEXT x          => execNext x
+            | _               => (tl c, gs, fs, p, e)
       ) handle
            BasicExn.RetGosub     => raise (BasicExn.Runtime ("RETURN without GOSUB", line))
          | BasicExn.NextFor      => raise (BasicExn.Runtime ("NEXT without FOR", line))

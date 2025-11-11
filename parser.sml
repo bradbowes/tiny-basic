@@ -4,7 +4,7 @@ struct
    let
       val scan = Scanner.scanner line
 
-      fun advance (tok, c, err) =
+      fun eat (tok, c, err) =
       let
          val (t, c') = scan c
       in
@@ -17,7 +17,7 @@ struct
          | Token.LPAREN =>
                let
                   val (e, c) = getExpression (scan c)
-                  val c = advance (Token.RPAREN, c, "expected \")\"")
+                  val c = eat (Token.RPAREN, c, "expected \")\"")
                in
                   (e, c)
                end
@@ -124,7 +124,7 @@ struct
       fun getLetStm (t, c) =
       let
          val v = getVar t
-         val c = advance (Token.EQ, c, v ^ " is not a command")
+         val c = eat (Token.EQ, c, v ^ " is not a command")
          val (e, c) = getExpression (scan c)
       in
          (Ast.LET (v, e), c)
@@ -133,9 +133,9 @@ struct
       fun getForStm (t, c) =
       let
          val v = getVar t
-         val c = advance (Token.EQ, c, "expected \"=\"")
+         val c = eat (Token.EQ, c, "expected \"=\"")
          val (init, c) = getExpression (scan c)
-         val c = advance (Token.TO, c, "expected TO")
+         val c = eat (Token.TO, c, "expected TO")
          val (limit, c) = getExpression (scan c)
          val (t, c') = scan c
       in
@@ -156,6 +156,11 @@ struct
 
       fun getInputStm (t, c) =
       let
+         val (prompt, (t, c)) = case t of
+              Token.STRING s  => let val c = eat (Token.COMMA, c, "expected \",\"")
+                                 in (SOME s, (scan c)) end
+            | _               => (NONE, (t, c))
+
          fun loop (ls, c) =
          let
             val (t, c') = (scan c)
@@ -163,7 +168,7 @@ struct
             case t of
                  Token.COMMA  => let val (t, c) = scan c'
                                  in loop ((getVar t)::ls, c) end
-               | _            => (Ast.INPUT (List.rev ls), c)
+               | _            => (Ast.INPUT (prompt, (List.rev ls)), c)
          end
       in
          loop ([getVar t], c)
@@ -241,7 +246,7 @@ struct
       and getIfStm (t, c) =
       let
          val (tst, c) = getCompare (t, c)
-         val c = advance (Token.THEN, c, "expected THEN")
+         val c = eat (Token.THEN, c, "expected THEN")
          val (t, c) = scan c
          val (stm, c) = case t of
               Token.NUM n  => (Ast.GOTO n, c)

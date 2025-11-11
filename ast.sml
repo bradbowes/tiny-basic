@@ -23,7 +23,7 @@ struct
       | RETURN
       | FOR of string * node * node * node option
       | NEXT of string option
-      | INPUT of string list
+      | INPUT of string option * string list
       | LET of string * node
       | CLEAR
       | NEW
@@ -66,6 +66,10 @@ struct
          | x::[]        => s ^ toString x
          | x::xs        => prCompound (xs, s ^ toString x ^ " : ")
 
+      fun prompt p = case p of
+           SOME s => toString (STRING s) ^ ", "
+         | NONE   => ""
+
    in
       case a of
            NUM n        => Int.toString n
@@ -83,7 +87,7 @@ struct
          | LT (x, y)    => toString x ^ " < " ^ toString y
          | LE (x, y)    => toString x ^ " <= " ^ toString y
          | PRINT ls     => "PRINT " ^ prItems (ls, "")
-         | INPUT ls     => "INPUT " ^ String.concatWith ", " ls
+         | INPUT (p, ls)=> "INPUT " ^ prompt p ^ String.concatWith ", " ls
          | LET (x, y)   => "LET " ^ x ^ " = " ^ toString y
          | IF (x, y)    => "IF " ^ toString x ^ " THEN " ^ toString y
          | GOTO n       => "GOTO " ^ Int.toString n
