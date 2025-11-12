@@ -33,6 +33,7 @@ struct
       | RUN
       | END
       | REM of string
+      | TICK of string
       | LINE of int * node
       | DEL of int
       | NUL
@@ -62,9 +63,9 @@ struct
 
       fun prCompound (ls, s) = case ls of
            []           => s
-         | x::REM r::_  => s ^ toString x ^ " '" ^ r
+         | x::TICK r::_ => s ^ toString x ^ " '" ^ r
          | x::[]        => s ^ toString x
-         | x::xs        => prCompound (xs, s ^ toString x ^ " : ")
+         | x::xs        => prCompound (xs, s ^ toString x ^ ": ")
 
       fun prompt p = case p of
            SOME s => toString (STRING s) ^ ", "
@@ -103,11 +104,12 @@ struct
          | SAVE s       => "SAVE " ^ bstr s
          | END          => "END"
          | REM s        => "REM" ^ s
+         | TICK s       => "'" ^ s
          | LIST         => "LIST"
          | RUN          => "RUN"
          | BYE          => "BYE"
          | RENUM (m, n) => "RENUM " ^ Int.toString m ^ ", " ^ Int.toString n
-         | COMP ls      => prCompound (List.rev ls, "")
+         | COMP ls      => prCompound (ls, "")
          | _            => ""
    end
 end

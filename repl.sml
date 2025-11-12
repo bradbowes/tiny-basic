@@ -52,9 +52,7 @@ struct
                                           in if j then s else pad s end)
             | _               => raise (BasicExn.Bug "expected print item")
 
-      in
-         print (prItems (ls, ""))
-      end
+      in print (prItems (ls, "")) end
 
       fun list out =
       let
@@ -79,8 +77,7 @@ struct
             let
                val l = (
                   print (getOpt (prompt, "? "));
-                  TextIO.inputLine TextIO.stdIn
-               )
+                  TextIO.inputLine TextIO.stdIn )
             in
                case l of
                     SOME s => s
@@ -111,12 +108,13 @@ struct
             case line of
                  SOME s =>
                      let val stm = Parser.parse s
-                     in case stm of
-                          LINE x => loop (Prog.insert (prog, x))
-                        | NUL    => loop prog
-                        | _      => (
-                              TextIO.closeIn input;
-                              raise BasicExn.Direct )
+                     in
+                        case stm of
+                             LINE x => loop (Prog.insert (prog, x))
+                           | NUL    => loop prog
+                           | _      => (
+                                 TextIO.closeIn input;
+                                 raise BasicExn.Direct )
                      end
                | NONE   => (TextIO.closeIn input; prog)
          end
@@ -138,7 +136,6 @@ struct
          val limit' = eval limit
          val inc' = case inc of SOME x => eval x | NONE => 1
          val enterLoop = (if inc' < 0 then op< else op>) (limit', init')
-
          val c' = if enterLoop then tl c else skipNext (tl c, 0)
          val e' = StrMap.insert (e, var, init')
          val fs' = if enterLoop then (var, limit', inc', tl c)::fs else fs
@@ -161,13 +158,6 @@ struct
             in (c', gs, fs', p, e') end
          else raise BasicExn.NextFor
       end
-
-      fun applyCompound (line, ls) =
-      let
-         fun loop (c, ls) = case ls of
-              nil    => c
-            | x::xs  => loop ((line, x)::c, xs)
-      in loop (tl c, ls) end
 
       fun exec (line, cmd) = (
          case cmd of
@@ -194,7 +184,7 @@ struct
             | GOSUB n         => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
             | RETURN          => (if null gs then raise BasicExn.RetGosub else hd gs,
                                     tl gs, fs, p, e)
-            | COMP ls         => (applyCompound (line, ls), gs, fs, p, e)
+            | COMP ls         => (map (fn x => (line, x)) ls, gs, fs, p, e)
             | END             => ([], [], [], p, e)
             | FOR x           => execFor x
             | NEXT x          => execNext x
@@ -211,10 +201,10 @@ struct
          | BasicExn.Quit         => raise BasicExn.Quit
          | x                     => raise (BasicExn.Runtime (exnMessage x, line))
 
-   in case c of
-        []     => (gs, fs, p, e)
-      | x::xs  => interp (exec x)
-
+   in
+      case c of
+           []     => (gs, fs, p, e)
+         | x::xs  => interp (exec x)
    end
 
    fun loop (gs, fs, p, e) =
@@ -233,9 +223,10 @@ struct
                         (case ln of SOME n => " in line " ^ (Int.toString n) | NONE => ""));
                   (gs, fs, p, e) )
 
-   in case line of
-        SOME s => (loop (exec s) handle BasicExn.Quit => ())
-      | NONE   => (print "\n"; ())
+   in
+      case line of
+           SOME s => (loop (exec s) handle BasicExn.Quit => ())
+         | NONE   => (print "\n"; ())
    end
 
 end

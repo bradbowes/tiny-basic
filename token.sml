@@ -42,6 +42,7 @@ struct
       | VAR of string
       | STRING of string
       | REM of string
+      | TICK of string
       | BYE
       | RENUM
 end

@@ -11,10 +11,11 @@ struct
       fun getAtom (t, c) = case t of
            Token.NUM n  => ((Ast.NUM n), c)
          | Token.VAR v  => ((Ast.VAR v), c)
-         | Token.LPAREN =>
-               let val (e, c) = getExpression (scan c)
-               in (e, eat (Token.RPAREN, c, "expected \")\"")) end
-         | _            => raise (BasicExn.Syntax "expected numeric expression")
+         | Token.LPAREN => let
+               val (e, c) = getExpression (scan c)
+               val c = eat (Token.RPAREN, c, "missing \")\"")
+            in (e, c) end
+         | _            => raise (BasicExn.Syntax "missing numeric expression")
 
       and getUnary (t, c) = case t of
            Token.MINUS  => let val (a, c) = getAtom (scan c)
@@ -91,21 +92,21 @@ struct
             | Token.GE => Ast.GE
             | Token.LT => Ast.LT
             | Token.LE => Ast.LE
-            | _        => raise (BasicExn.Syntax "expected comparison")
+            | _        => raise (BasicExn.Syntax "missing comparison")
          val (right, c) = getExpression (scan c)
       in (node (left, right), c) end
 
       fun getGoStm f (t, c) = case t of
            Token.NUM n  => ((f n), c)
-         | _            => raise (BasicExn.Syntax "expected line number")
+         | _            => raise (BasicExn.Syntax "missing line number")
 
       fun getFileCmd f (file, c) = case file of
            Token.STRING s  => ((f s), c)
-         | _               => raise (BasicExn.Syntax "expected string")
+         | _               => raise (BasicExn.Syntax "missing file name string")
 
       fun getVar t = case t of
            Token.VAR v  => v
-         | _            => raise (BasicExn.Syntax "expected variable")
+         | _            => raise (BasicExn.Syntax "missing variable")
 
       fun getLetStm (t, c) =
       let
@@ -117,9 +118,9 @@ struct
       fun getForStm (t, c) =
       let
          val v = getVar t
-         val c = eat (Token.EQ, c, "expected \"=\"")
+         val c = eat (Token.EQ, c, "missing \"=\"")
          val (init, c) = getExpression (scan c)
-         val c = eat (Token.TO, c, "expected TO")
+         val c = eat (Token.TO, c, "missing TO")
          val (limit, c) = getExpression (scan c)
          val (t, c') = scan c
       in
@@ -140,7 +141,7 @@ struct
       fun getInputStm (t, c) =
       let
          val (prompt, (t, c)) = case t of
-              Token.STRING s  => let val c = eat (Token.COMMA, c, "expected \",\"")
+              Token.STRING s  => let val c = eat (Token.COMMA, c, "missing \",\"")
                                  in (SOME s, (scan c)) end
             | _               => (NONE, (t, c))
 
@@ -197,6 +198,7 @@ struct
          | Token.FOR       => getForStm (scan c)
          | Token.NEXT      => getNextStm (t, c)
          | Token.REM s     => (Ast.REM s, c)
+         | Token.TICK s    => (Ast.TICK s, c)
          | Token.LIST      => (Ast.LIST, c)
          | Token.RUN       => (Ast.RUN, c)
          | Token.BYE       => (Ast.BYE, c)
@@ -212,10 +214,10 @@ struct
          in
             case t of
                  Token.COLON  => loop (s::ls, (scan c'))
-               | Token.REM x  => (Ast.COMP (Ast.REM x::s::ls), c')
+               | Token.TICK x => (Ast.COMP (List.rev (Ast.TICK x::s::ls)), c')
                | Token.EOL    => (case ls of
                                       []     => (s, c)
-                                    | x::xs  => (Ast.COMP (s::ls), c) )
+                                    | x::xs  => (Ast.COMP (List.rev (s::ls)), c) )
                | _            => raise (BasicExn.Syntax "expected end of line")
          end
       in loop ([], tk) end
@@ -223,7 +225,7 @@ struct
       and getIfStm (t, c) =
       let
          val (tst, c) = getCompare (t, c)
-         val c = eat (Token.THEN, c, "expected THEN")
+         val c = eat (Token.THEN, c, "missing THEN")
          val (t, c) = scan c
          val (stm, c) = case t of
               Token.NUM n  => (Ast.GOTO n, c)

@@ -71,17 +71,17 @@ struct
                      (STRING (String.implode (List.rev ls)), p + 1)
                end
             else if Char.contains "\n\r\^D" ch then
-               raise (BasicExn.Syntax "Unterminated string")
+               (STRING (String.implode (List.rev ls)), p + 1)
             else loop (ch::ls, p + 1)
          end
       in loop ([], pos) end
 
-      fun getComment pos =
+      fun getComment (tok, pos) =
       let
          fun loop (ls, p) =
          let
             val ch = getChar p
-            fun ret (ls, p) = (REM (String.implode (List.rev ls)), p)
+            fun ret (ls, p) = (tok (String.implode (List.rev ls)), p)
          in
             case (ch) of
                  #"\n"       => ret (ls, p)
@@ -89,9 +89,7 @@ struct
                | #"\^D"      => ret (ls, p)
                | _           => loop (ch::ls, p + 1)
          end
-      in
-         loop ((if getChar pos = #" " then [] else [#" "]), pos)
-      end
+      in loop ([], pos) end
 
    in
       fn pos =>
@@ -111,7 +109,7 @@ struct
             | #"/"   => (DIV, p + 1)
             | #"="   => (EQ, p + 1)
             | #"?"   => (PRINT, p + 1)
-            | #"'"   => (getComment (p + 1))
+            | #"'"   => (getComment (TICK, p + 1))
             | #"<"   => let val ch = look 1 in
                         case ch of
                              #"="   => (LE, p + 2)
@@ -163,7 +161,7 @@ struct
                                        case ch of
                                             #"N"   => getKeyword (RENUM, "REN", "UM", p + 3)
                                           | #"M"   => if not (Char.isAlphaNum (look 3))
-                                                      then getComment (p + 3)
+                                                      then getComment (REM, p + 3)
                                                       else getVar ([#"M", #"E", #"R"], p + 3)
                                           | _      => getKeyword (RETURN, "RE", "TURN", p + 2)
                                        end
