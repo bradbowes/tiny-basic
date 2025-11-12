@@ -11,8 +11,7 @@ struct
       if pos >= sz then #"\^D" else String.sub (s, pos)
 
       fun skipWhite pos =
-      let
-         val ch = getChar pos
+      let val ch = getChar pos
       in
          if ch = #" " orelse ch = #"\t" then
             skipWhite (pos + 1)
@@ -23,21 +22,17 @@ struct
       fun getNumber pos =
       let
          fun loop (n, pos) =
-         let
-            val ch = getChar pos
+         let val ch = getChar pos
          in
             if Char.isDigit ch then
                loop (n * 10 + (Char.ord ch - Char.ord #"0"), pos + 1)
             else
                (NUM (n), pos)
          end
-      in
-         loop (0, pos)
-      end
+      in loop (0, pos) end
 
       fun getVar (ls, pos) =
-      let
-         val ch = Char.toUpper (getChar pos)
+      let val ch = Char.toUpper (getChar pos)
       in
          if Char.isAlphaNum ch then
             getVar (ch :: ls, pos + 1)
@@ -48,8 +43,7 @@ struct
       fun getKeyword (tok, kw1, kw2, pos) =
       let
          fun loop (acc, rest, pos) =
-         let
-            val ch = Char.toUpper (getChar pos)
+         let val ch = Char.toUpper (getChar pos)
          in
             case rest of
                  []    => if Char.isAlphaNum ch
@@ -66,12 +60,10 @@ struct
       fun getString pos =
       let
          fun loop (ls, p) =
-         let
-            val ch = getChar p
+         let val ch = getChar p
          in
             if ch = #"\"" then
-               let
-                  val ch = getChar (p + 1)
+               let val ch = getChar (p + 1)
                in
                   if ch = #"\"" then
                      loop (ch::ls, p + 2)
@@ -82,9 +74,7 @@ struct
                raise (BasicExn.Syntax "Unterminated string")
             else loop (ch::ls, p + 1)
          end
-      in
-         loop ([], pos)
-      end
+      in loop ([], pos) end
 
       fun getComment pos =
       let
@@ -194,5 +184,4 @@ struct
                else raise (BasicExn.Syntax "Illegal character")
       end
    end
-
 end

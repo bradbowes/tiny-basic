@@ -60,16 +60,14 @@ struct
       case t of
          NODE (l, v, r, h) =>
             if balance > 1 then
-               let
-                  val k = getKey l
+               let val k = getKey l
                in
                   if Key.lt (key, k) then rotateRight t
                   else if Key.lt (k, key) then rotateRight (NODE (rotateLeft l, v, r, h))
                   else t
                end
             else if balance < ~1 then
-               let
-                  val k = getKey r
+               let val k = getKey r
                in
                   if Key.lt (k, key) then rotateLeft t
                   else if Key.lt (key, k) then rotateLeft (NODE (l, v, rotateRight r, h))

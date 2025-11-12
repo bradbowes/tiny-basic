@@ -1,7 +1,7 @@
 structure Repl : sig
    val loop : (int option * Ast.node) list list *
     (string * int * int * (int option * Ast.node) list) list *
-   (int * Ast.node) list * int StrMap.map -> unit
+    (int * Ast.node) list * int StrMap.map -> unit
 end  =
 struct
    open Ast
@@ -42,9 +42,7 @@ struct
          let
             val sz = String.size s
             val n = 12 - (Int.rem (sz, 12))
-         in
-            sp (s, n)
-         end
+         in sp (s, n) end
 
          fun prItems (ls, s) = case ls of
               []              => "\n"
@@ -62,15 +60,12 @@ struct
       let
          fun outputLine (line, stm) =
             TextIO.output (out, Int.toString line ^ " " ^ toString stm ^ "\r\n")
-      in
-         app outputLine p
-      end
+      in app outputLine p end
 
       fun input (prompt, vars) =
       let
          val msg =
-         let
-            val len = length vars
+         let val len = length vars
          in
             "INPUT ERROR: expected " ^ Int.toString len ^
             (if len > 1 then " comma separated" else "") ^
@@ -100,9 +95,7 @@ struct
                | (_::_, [])      => raise BasicExn.Input
                | (x::xs, v::vs)  => insert (StrMap.insert (env, x, v), xs, vs)
 
-         in
-            insert (e, vars, vals)
-         end
+         in insert (e, vars, vals) end
       in
          try ()
          handle BasicExn.Input => (prErr msg; input (prompt, vars))
@@ -113,8 +106,7 @@ struct
          val input = TextIO.openIn file
 
          fun loop prog =
-         let
-            val line = TextIO.inputLine  input
+         let val line = TextIO.inputLine  input
          in
             case line of
                  SOME s =>
@@ -129,9 +121,7 @@ struct
                | NONE   => (TextIO.closeIn input; prog)
          end
 
-      in
-         loop []
-      end
+      in loop [] end
 
       fun execFor (var, init, limit, inc) =
       let
@@ -152,9 +142,7 @@ struct
          val c' = if enterLoop then tl c else skipNext (tl c, 0)
          val e' = StrMap.insert (e, var, init')
          val fs' = if enterLoop then (var, limit', inc', tl c)::fs else fs
-      in
-         (c', gs, fs', p, e')
-      end
+      in (c', gs, fs', p, e') end
 
       fun execNext opt =
       let
@@ -170,20 +158,16 @@ struct
                val c' = if more then cont else tl c
                val fs' = if more then fs else tl fs
                val e' = StrMap.insert (e, v, n)
-            in
-               (c', gs, fs', p, e')
-            end
+            in (c', gs, fs', p, e') end
          else raise BasicExn.NextFor
       end
 
-      fun applyCompound ls =
+      fun applyCompound (line, ls) =
       let
          fun loop (c, ls) = case ls of
               nil    => c
-            | x::xs  => loop ((NONE, x)::c, xs)
-      in
-         loop (tl c, ls)
-      end
+            | x::xs  => loop ((line, x)::c, xs)
+      in loop (tl c, ls) end
 
       fun exec (line, cmd) = (
          case cmd of
@@ -210,7 +194,7 @@ struct
             | GOSUB n         => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
             | RETURN          => (if null gs then raise BasicExn.RetGosub else hd gs,
                                     tl gs, fs, p, e)
-            | COMP ls         => (applyCompound ls, gs, fs, p, e)
+            | COMP ls         => (applyCompound (line, ls), gs, fs, p, e)
             | END             => ([], [], [], p, e)
             | FOR x           => execFor x
             | NEXT x          => execNext x

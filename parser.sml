@@ -5,23 +5,16 @@ struct
       val scan = Scanner.scanner line
 
       fun eat (tok, c, err) =
-      let
-         val (t, c') = scan c
-      in
-         if t = tok then c' else raise (BasicExn.Syntax err)
-      end
+         let val (t, c') = scan c
+         in if t = tok then c' else raise (BasicExn.Syntax err) end
 
       fun getAtom (t, c) = case t of
            Token.NUM n  => ((Ast.NUM n), c)
          | Token.VAR v  => ((Ast.VAR v), c)
          | Token.LPAREN =>
-               let
-                  val (e, c) = getExpression (scan c)
-                  val c = eat (Token.RPAREN, c, "expected \")\"")
-               in
-                  (e, c)
-               end
-         | _               => raise (BasicExn.Syntax "expected numeric expression")
+               let val (e, c) = getExpression (scan c)
+               in (e, eat (Token.RPAREN, c, "expected \")\"")) end
+         | _            => raise (BasicExn.Syntax "expected numeric expression")
 
       and getUnary (t, c) = case t of
            Token.MINUS  => let val (a, c) = getAtom (scan c)
@@ -33,6 +26,7 @@ struct
          fun loop (left, cont) =
          let
             val (opr, c) = (scan cont)
+
             fun build f =
                let val (right, c) = getUnary (scan c)
                in loop (f (left, right), c) end
@@ -42,15 +36,14 @@ struct
                | Token.DIV => build Ast.DIV
                | _         => (left, cont)
          end
-      in
-         loop (getUnary tk)
-      end
+      in loop (getUnary tk) end
 
       and getExpression tk =
       let
          fun loop (left, cont) =
          let
             val (opr, c) = (scan cont)
+
             fun build f =
                let val (right, c) = getProduct (scan c)
                in loop (f (left, right), c) end
@@ -60,9 +53,7 @@ struct
                | Token.MINUS  => build Ast.SUB
                | _            => (left, cont)
          end
-      in
-         loop (getProduct tk)
-      end
+      in loop (getProduct tk) end
 
       fun getPrintStm c =
       let
@@ -75,8 +66,7 @@ struct
             | _               => NONE
 
          fun loop (ls, c) =
-         let
-            val item = getItem (scan c)
+         let val item = getItem (scan c)
          in
             case item of
                  SOME (x, c)  =>
@@ -88,9 +78,7 @@ struct
                   end
                | NONE         => (Ast.PRINT (List.rev ls), c)
          end
-      in
-         loop ([], c)
-      end
+      in loop ([], c) end
 
       fun getCompare tk =
       let
@@ -105,9 +93,7 @@ struct
             | Token.LE => Ast.LE
             | _        => raise (BasicExn.Syntax "expected comparison")
          val (right, c) = getExpression (scan c)
-      in
-         (node (left, right), c)
-      end
+      in (node (left, right), c) end
 
       fun getGoStm f (t, c) = case t of
            Token.NUM n  => ((f n), c)
@@ -126,9 +112,7 @@ struct
          val v = getVar t
          val c = eat (Token.EQ, c, v ^ " is not a command")
          val (e, c) = getExpression (scan c)
-      in
-         (Ast.LET (v, e), c)
-      end
+      in (Ast.LET (v, e), c) end
 
       fun getForStm (t, c) =
       let
@@ -146,8 +130,7 @@ struct
       end
 
       fun getNextStm (t, c) =
-      let
-         val (t, c') = scan c
+      let val (t, c') = scan c
       in
          case t of
               Token.VAR v  => (Ast.NEXT (SOME v), c')
@@ -162,21 +145,17 @@ struct
             | _               => (NONE, (t, c))
 
          fun loop (ls, c) =
-         let
-            val (t, c') = (scan c)
+         let val (t, c') = (scan c)
          in
             case t of
                  Token.COMMA  => let val (t, c) = scan c'
                                  in loop ((getVar t)::ls, c) end
                | _            => (Ast.INPUT (prompt, (List.rev ls)), c)
          end
-      in
-         loop ([getVar t], c)
-      end
+      in loop ([getVar t], c) end
 
       fun getRenumCmd c =
-      let
-         val (t, c') = scan c
+      let val (t, c') = scan c
       in
          case t of
               Token.NUM m  =>
@@ -191,7 +170,7 @@ struct
                           Token.NUM n  => (Ast.RENUM (m, n), c)
                         | _            => (Ast.RENUM (m, 10), c')
                   end
-      | _                  => (Ast.RENUM (100, 10), c)
+            | _            => (Ast.RENUM (100, 10), c)
       end
 
       fun getStatement (t, c) = case t of
@@ -239,9 +218,7 @@ struct
                                     | x::xs  => (Ast.COMP (s::ls), c) )
                | _            => raise (BasicExn.Syntax "expected end of line")
          end
-      in
-         loop ([], tk)
-      end
+      in loop ([], tk) end
 
       and getIfStm (t, c) =
       let
@@ -251,9 +228,7 @@ struct
          val (stm, c) = case t of
               Token.NUM n  => (Ast.GOTO n, c)
             | _            => getCompoundStm (t, c)
-      in
-         (Ast.IF (tst, stm), c)
-      end
+      in (Ast.IF (tst, stm), c) end
 
       fun getLine (t, c) = case t of
            Token.NUM (n) =>
@@ -269,9 +244,7 @@ struct
                end
          | _ => let val (s, _) = getCompoundStm (t, c) in s end
 
-   in
-      getLine (scan 0)
-   end
+   in getLine (scan 0) end
 
    fun parseInput line =
    let
@@ -301,8 +274,6 @@ struct
             | _            => raise (BasicExn.Input)
       end
 
-   in
-      getValues ([], scan 0)
-   end
+   in getValues ([], scan 0) end
 
 end

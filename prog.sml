@@ -8,9 +8,7 @@ struct
                if l > ln then List.revAppend (acc, (ln, stm)::rest)
                else if l = ln then List.revAppend (acc, (ln, stm)::xs)
                else loop ((l, s)::acc, xs)
-   in
-      loop ([], prog)
-   end
+   in loop ([], prog) end
 
    fun delete (prog, ln) =
    let
@@ -20,12 +18,9 @@ struct
                if l > ln then prog
                else if l = ln then List.revAppend (acc, xs)
                else loop ((l, s)::acc, xs)
-   in
-      loop ([], prog)
-   end
+   in loop ([], prog) end
 
-   fun getCode prog =
-      map (fn (l, stm) => (SOME l, stm)) prog
+   fun getCode prog = map (fn (l, stm) => (SOME l, stm)) prog
 
    fun getContinuation (rest, ln) = case rest of
         []           => raise BasicExn.NoLine
@@ -56,8 +51,6 @@ struct
            []           => List.rev acc
          | (_, s)::xs   => loop ((n, (fix s))::acc, xs, n + inc)
 
-   in
-      loop ([], prog, start)
-   end
+   in loop ([], prog, start) end
 
 end
