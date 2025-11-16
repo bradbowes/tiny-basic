@@ -103,20 +103,19 @@ struct
          val input = TextIO.openIn file
 
          fun loop prog =
-         let val line = TextIO.inputLine  input
-         in
-            case line of
-                 SOME s =>
-                     let val stm = Parser.parse s
-                     in
-                        case stm of
-                             LINE x => loop (Prog.insert (prog, x))
-                           | NUL    => loop prog
-                           | _      => (
-                                 TextIO.closeIn input;
-                                 raise BasicExn.Direct )
-                     end
-               | NONE   => (TextIO.closeIn input; prog)
+         let val line = TextIO.inputLine input
+         in case line of
+              SOME s =>
+                  let val stm = Parser.parse s
+                  in
+                     case stm of
+                          LINE x => loop (Prog.insert (prog, x))
+                        | NUL    => loop prog
+                        | _      => (
+                              TextIO.closeIn input;
+                              raise BasicExn.Direct )
+                  end
+            | NONE   => (TextIO.closeIn input; prog)
          end
 
       in loop [] end
@@ -160,13 +159,15 @@ struct
       end
 
       fun exec (line, cmd) = (
-         case cmd of
-              PRINT ls     => pr ls
-            | LIST         => list TextIO.stdOut
-            | SAVE file    => let val out = TextIO.openOut file
-                              in list out; TextIO.closeOut out end
-            | BYE          => raise BasicExn.Quit
-            | _            => ()
+         case line of
+              SOME _ => (case cmd of
+                             NEW       => raise BasicExn.Mode
+                           | LOAD _    => raise BasicExn.Mode
+                           | RENUM _   => raise BasicExn.Mode
+                           | SAVE _    => raise BasicExn.Mode
+                           | LIST      => raise BasicExn.Mode
+                           | _         => () )
+            | NONE => ()
             ;
 
          case cmd of
@@ -184,27 +185,40 @@ struct
             | GOSUB n         => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
             | RETURN          => (if null gs then raise BasicExn.RetGosub else hd gs,
                                     tl gs, fs, p, e)
-            | COMP ls         => (map (fn x => (line, x)) ls, gs, fs, p, e)
+            | COMP ls         => (map (fn x => (line, x)) ls @ tl c, gs, fs, p, e)
             | END             => ([], [], [], p, e)
             | FOR x           => execFor x
             | NEXT x          => execNext x
+            | PRINT ls        => (pr ls; (tl c, gs, fs, p, e))
+            | LIST            => (list TextIO.stdOut; (tl c, gs, fs, p, e))
+            | SAVE file       => let val out = TextIO.openOut file
+                                 in list out; TextIO.closeOut out; (tl c, gs, fs, p, e) end
+            | BYE             => raise BasicExn.Quit
             | _               => (tl c, gs, fs, p, e)
-      ) handle
-           BasicExn.RetGosub     => raise (BasicExn.Runtime ("RETURN without GOSUB", line))
-         | BasicExn.NextFor      => raise (BasicExn.Runtime ("NEXT without FOR", line))
-         | BasicExn.ForNext      => raise (BasicExn.Runtime ("FOR without NEXT", line))
-         | BasicExn.NoLine       => raise (BasicExn.Runtime ("Undefined line number", line))
-         | BasicExn.Bug msg      => raise (BasicExn.Runtime ("Interpreter bug: " ^ msg, line))
-         | BasicExn.Direct       => raise (BasicExn.Runtime (
-                                    "Direct command in program text", line))
-         | BasicExn.Syntax msg   => raise (BasicExn.Syntax msg)
-         | BasicExn.Quit         => raise BasicExn.Quit
-         | x                     => raise (BasicExn.Runtime (exnMessage x, line))
+         )
 
-   in
-      case c of
-           []     => (gs, fs, p, e)
-         | x::xs  => interp (exec x)
+         handle
+              BasicExn.RetGosub     => raise (BasicExn.Runtime (
+                                          "RETURN without GOSUB", line))
+            | BasicExn.NextFor      => raise (BasicExn.Runtime (
+                                          "NEXT without FOR", line))
+            | BasicExn.ForNext      => raise (BasicExn.Runtime (
+                                          "FOR without NEXT", line))
+            | BasicExn.NoLine       => raise (BasicExn.Runtime (
+                                          "Undefined line number", line))
+            | BasicExn.Bug msg      => raise (BasicExn.Runtime (
+                                          "Interpreter bug: " ^ msg, line))
+            | BasicExn.Mode         => raise (BasicExn.Runtime (
+                                          "Interactive command in run mode", line))
+            | BasicExn.Direct       => raise (BasicExn.Runtime (
+                                          "Direct command in program text", line))
+            | BasicExn.Syntax msg   => raise (BasicExn.Syntax msg)
+            | BasicExn.Quit         => raise BasicExn.Quit
+            | x                     => raise (BasicExn.Runtime (exnMessage x, line))
+
+   in case c of
+        []     => (gs, fs, p, e)
+      | x::xs  => interp (exec x)
    end
 
    fun loop (gs, fs, p, e) =
@@ -214,19 +228,17 @@ struct
          TextIO.inputLine TextIO.stdIn
       )
 
-      fun exec input =
-         interp ([(NONE, Parser.parse input)], gs, fs, p, e)
-         handle
-              BasicExn.Syntax msg   => (prErr ("SYNTAX ERROR: " ^ msg); (gs, fs, p, e))
-            | BasicExn.Runtime (msg, ln)  => (
-                  prErr ("RUNTIME ERROR: " ^ msg ^
-                        (case ln of SOME n => " in line " ^ (Int.toString n) | NONE => ""));
-                  (gs, fs, p, e) )
+      fun exec input = interp ([(NONE, Parser.parse input)], gs, fs, p, e)
+      handle
+           BasicExn.Syntax msg   => (prErr ("SYNTAX ERROR: " ^ msg); (gs, fs, p, e))
+         | BasicExn.Runtime (msg, ln)  => (
+               prErr ("ERROR: " ^ msg ^
+                     (case ln of SOME n => " in line " ^ (Int.toString n) | NONE => ""));
+               (gs, fs, p, e) )
 
-   in
-      case line of
-           SOME s => (loop (exec s) handle BasicExn.Quit => ())
-         | NONE   => (print "\n"; ())
+   in case line of
+        SOME s => (loop (exec s) handle BasicExn.Quit => ())
+      | NONE   => (print "\n"; ())
    end
 
 end

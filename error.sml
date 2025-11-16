@@ -7,6 +7,7 @@ struct
    exception ForNext
    exception NoLine
    exception Direct
+   exception Mode
    exception Interrupt
    exception Quit
    exception Input
