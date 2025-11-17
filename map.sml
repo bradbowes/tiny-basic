@@ -56,9 +56,8 @@ struct
                newNode (l, (key, value), r)
 
       val balance = getBalance t
-   in
-      case t of
-         NODE (l, v, r, h) =>
+   in case t of
+        NODE (l, v, r, h) =>
             if balance > 1 then
                let val k = getKey l
                in
@@ -75,7 +74,7 @@ struct
                end
             else
                t
-       | _ => raise (BasicExn.Bug "insert")
+      | _ => raise (BasicExn.Bug "insert")
    end
 
    fun lookup (tbl, key) = case tbl of

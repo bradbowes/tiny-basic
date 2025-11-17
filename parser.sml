@@ -31,11 +31,11 @@ struct
             fun build f =
                let val (right, c) = getUnary (scan c)
                in loop (f (left, right), c) end
-         in
-            case opr of
-                 Token.MUL => build Ast.MUL
-               | Token.DIV => build Ast.DIV
-               | _         => (left, cont)
+
+         in case opr of
+              Token.MUL => build Ast.MUL
+            | Token.DIV => build Ast.DIV
+            | _         => (left, cont)
          end
       in loop (getUnary tk) end
 
@@ -48,11 +48,11 @@ struct
             fun build f =
                let val (right, c) = getProduct (scan c)
                in loop (f (left, right), c) end
-         in
-            case opr of
-                 Token.PLUS   => build Ast.ADD
-               | Token.MINUS  => build Ast.SUB
-               | _            => (left, cont)
+
+         in case opr of
+              Token.PLUS   => build Ast.ADD
+            | Token.MINUS  => build Ast.SUB
+            | _            => (left, cont)
          end
       in loop (getProduct tk) end
 
@@ -68,16 +68,15 @@ struct
 
          fun loop (ls, c) =
          let val item = getItem (scan c)
-         in
-            case item of
-                 SOME (x, c)  =>
-                  let val (sep, c') = scan c
-                  in case sep of
-                       Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, c')
-                     | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, c')
-                     | _               => (Ast.PRINT (List.rev (Ast.ITEM (x, false)::ls)), c)
-                  end
-               | NONE         => (Ast.PRINT (List.rev ls), c)
+         in case item of
+              SOME (x, c)  =>
+               let val (sep, c') = scan c
+               in case sep of
+                    Token.SEMICOLON => loop (Ast.ITEM (x, true)::ls, c')
+                  | Token.COMMA     => loop (Ast.ITEM (x, false)::ls, c')
+                  | _               => (Ast.PRINT (List.rev (Ast.ITEM (x, false)::ls)), c)
+               end
+            | NONE         => (Ast.PRINT (List.rev ls), c)
          end
       in loop ([], c) end
 
@@ -123,19 +122,17 @@ struct
          val c = eat (Token.TO, c, "missing TO")
          val (limit, c) = getExpression (scan c)
          val (t, c') = scan c
-      in
-         case t of
-              Token.STEP   => let val (inc, c) = getExpression (scan c')
-                              in (Ast.FOR (v, init, limit, SOME inc), c) end
-            | _            => (Ast.FOR (v, init, limit, NONE), c)
+      in case t of
+           Token.STEP   => let val (inc, c) = getExpression (scan c')
+                           in (Ast.FOR (v, init, limit, SOME inc), c) end
+         | _            => (Ast.FOR (v, init, limit, NONE), c)
       end
 
       fun getNextStm (t, c) =
       let val (t, c') = scan c
-      in
-         case t of
-              Token.VAR v  => (Ast.NEXT (SOME v), c')
-            | _            => (Ast.NEXT NONE, c)
+      in case t of
+           Token.VAR v  => (Ast.NEXT (SOME v), c')
+         | _            => (Ast.NEXT NONE, c)
       end
 
       fun getInputStm (t, c) =
@@ -147,31 +144,29 @@ struct
 
          fun loop (ls, c) =
          let val (t, c') = (scan c)
-         in
-            case t of
-                 Token.COMMA  => let val (t, c) = scan c'
-                                 in loop ((getVar t)::ls, c) end
-               | _            => (Ast.INPUT (prompt, (List.rev ls)), c)
+         in case t of
+              Token.COMMA  => let val (t, c) = scan c'
+                              in loop ((getVar t)::ls, c) end
+            | _            => (Ast.INPUT (prompt, (List.rev ls)), c)
          end
       in loop ([getVar t], c) end
 
       fun getRenumCmd c =
       let val (t, c') = scan c
-      in
-         case t of
-              Token.NUM m  =>
-                  let
-                     val (t, c) = scan c'
-                     val (t, c) = case t of
-                          Token.COMMA => scan c
-                        | Token.NUM _ => (t, c)
-                        | _           => (Token.EOL, c')
-                  in
-                     case t of
-                          Token.NUM n  => (Ast.RENUM (m, n), c)
-                        | _            => (Ast.RENUM (m, 10), c')
-                  end
-            | _            => (Ast.RENUM (100, 10), c)
+      in case t of
+           Token.NUM m  =>
+               let
+                  val (t, c) = scan c'
+                  val (t, c) = case t of
+                       Token.COMMA => scan c
+                     | Token.NUM _ => (t, c)
+                     | _           => (Token.EOL, c')
+               in
+                  case t of
+                       Token.NUM n  => (Ast.RENUM (m, n), c)
+                     | _            => (Ast.RENUM (m, 10), c')
+               end
+         | _            => (Ast.RENUM (100, 10), c)
       end
 
       fun getStatement (t, c) = case t of
@@ -211,14 +206,13 @@ struct
          let
             val (s, c) = getStatement tk
             val (t, c') = case s of Ast.NUL => tk | _ => (scan c)
-         in
-            case t of
-                 Token.COLON  => loop (s::ls, (scan c'))
-               | Token.TICK x => (Ast.COMP (List.rev (Ast.TICK x::s::ls)), c')
-               | Token.EOL    => (case ls of
-                                      []     => (s, c)
-                                    | x::xs  => (Ast.COMP (List.rev (s::ls)), c) )
-               | _            => raise (BasicExn.Syntax "expected end of line")
+         in case t of
+              Token.COLON  => loop (s::ls, (scan c'))
+            | Token.TICK x => (Ast.COMP (List.rev (Ast.TICK x::s::ls)), c')
+            | Token.EOL    => (case ls of
+                                   []     => (s, c)
+                                 | x::xs  => (Ast.COMP (List.rev (s::ls)), c) )
+            | _            => raise (BasicExn.Syntax "expected end of line")
          end
       in loop ([], tk) end
 
@@ -239,10 +233,9 @@ struct
                   handle
                      BasicExn.Syntax msg => raise
                         (BasicExn.Syntax (msg ^ " in line " ^ Int.toString n))
-               in
-                  case s of
-                       Ast.NUL   => Ast.DEL n
-                     | _         => Ast.LINE (n, s)
+               in case s of
+                    Ast.NUL   => Ast.DEL n
+                  | _         => Ast.LINE (n, s)
                end
          | _ => let val (s, _) = getCompoundStm (t, c) in s end
 
@@ -269,11 +262,10 @@ struct
       let
          val (n, c) = getValue tk
          val (t, c) = (scan c)
-      in
-         case t of
-              Token.COMMA  => getValues (n::ls, scan c)
-            | Token.EOL    => List.rev (n::ls)
-            | _            => raise (BasicExn.Input)
+      in case t of
+           Token.COMMA  => getValues (n::ls, scan c)
+         | Token.EOL    => List.rev (n::ls)
+         | _            => raise (BasicExn.Input)
       end
 
    in getValues ([], scan 0) end

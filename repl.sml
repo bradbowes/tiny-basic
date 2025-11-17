@@ -78,10 +78,9 @@ struct
                val l = (
                   print (getOpt (prompt, "? "));
                   TextIO.inputLine TextIO.stdIn )
-            in
-               case l of
-                    SOME s => s
-                  | NONE   => (print "\n"; raise BasicExn.Quit)
+            in case l of
+                 SOME s => s
+               | NONE   => (print "\n"; raise BasicExn.Quit)
             end
 
             val vals = Parser.parseInput line
