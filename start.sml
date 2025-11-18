@@ -1,1 +1,1 @@
-val _ = Main.main ()
+val _ = Main.mltonMain ()

@@ -5,8 +5,8 @@ map.sml
 token.sml
 scanner.sml
 ast.sml
-prog.sml
 parser.sml
+prog.sml
 repl.sml
 main.sml
 start.sml

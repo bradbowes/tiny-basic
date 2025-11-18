@@ -76,12 +76,12 @@ struct
          fun loop (ls, p) =
          let
             val ch = getChar p
-            fun ret (ls, p) = (tok (String.implode (List.rev ls)), p)
+            fun ret () = (tok (String.implode (List.rev ls)), p)
          in case (ch) of
-              #"\n"       => ret (ls, p)
-            | #"\r"       => ret (ls, p)
-            | #"\^D"      => ret (ls, p)
-            | _           => loop (ch::ls, p + 1)
+              #"\n"  => ret ()
+            | #"\r"  => ret ()
+            | #"\^D" => ret ()
+            | _      => loop (ch::ls, p + 1)
          end
       in loop ([], pos) end
 
@@ -90,7 +90,7 @@ struct
       let
          val (ch, p) = skipWhite pos
          fun look n = Char.toUpper (getChar (p + n))
-      in case Char.toUpper(ch) of
+      in case Char.toUpper ch of
            #"\^D" => (EOL, p)
          | #"\n"  => (EOL, p + 1)
          | #"\r"  => (EOL, p + (if look 1 = #"\n" then 2 else 1))

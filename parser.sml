@@ -169,6 +169,13 @@ struct
          | _            => (Ast.RENUM (100, 10), c)
       end
 
+      fun getRunCmd c =
+      let val (t, c') = scan c
+      in case t of
+           Token.STRING s  => (Ast.RUN (SOME s), c')
+         | _               => (Ast.RUN NONE, c)
+      end
+
       fun getStatement (t, c) = case t of
            Token.PRINT     => getPrintStm c
          | Token.EOL       => (Ast.NUL, c)
@@ -195,7 +202,7 @@ struct
          | Token.REM s     => (Ast.REM s, c)
          | Token.TICK s    => (Ast.TICK s, c)
          | Token.LIST      => (Ast.LIST, c)
-         | Token.RUN       => (Ast.RUN, c)
+         | Token.RUN       => getRunCmd c
          | Token.BYE       => (Ast.BYE, c)
          | Token.RENUM     => getRenumCmd c
          | _               => raise (BasicExn.Syntax "expected statement")

@@ -1,7 +1,5 @@
 structure Repl : sig
-   val loop : (int option * Ast.node) list list *
-    (string * int * int * (int option * Ast.node) list) list *
-    (int * Ast.node) list * int StrMap.map -> unit
+   val init : Ast.node list -> unit
 end  =
 struct
    open Ast
@@ -157,6 +155,13 @@ struct
          else raise BasicExn.NextFor
       end
 
+      fun run f =
+      let
+         val p' = case f of
+              SOME s => load s
+            | NONE   => p
+      in (Prog.getCode p', [], [], p', StrMap.empty) end
+
       fun exec (line, cmd) = (
          case line of
               SOME _ => (case cmd of
@@ -178,7 +183,7 @@ struct
             | RENUM (x, y)    => ([], [], [], Prog.renum (p, x, y), e)
             | LET (x, y)      => (tl c, gs, fs, p, StrMap.insert (e, x, eval y))
             | CLEAR           => (tl c, [], [], p, StrMap.empty)
-            | RUN             => (Prog.getCode p, [], [], p, StrMap.empty)
+            | RUN f           => run f
             | INPUT (pr, ls)  => (tl c, gs, fs, p, input (pr, ls))
             | GOTO n          => (Prog.getContinuation (p, n), gs, fs, p, e)
             | GOSUB n         => (Prog.getContinuation (p, n), (tl c)::gs, fs, p, e)
@@ -229,7 +234,9 @@ struct
 
       fun exec input = interp ([(NONE, Parser.parse input)], gs, fs, p, e)
       handle
-           BasicExn.Syntax msg   => (prErr ("SYNTAX ERROR: " ^ msg); (gs, fs, p, e))
+           BasicExn.Syntax msg         => (
+               prErr ("SYNTAX ERROR: " ^ msg);
+               (gs, fs, p, e) )
          | BasicExn.Runtime (msg, ln)  => (
                prErr ("ERROR: " ^ msg ^
                      (case ln of SOME n => " in line " ^ (Int.toString n) | NONE => ""));
@@ -238,6 +245,22 @@ struct
    in case line of
         SOME s => (loop (exec s) handle BasicExn.Quit => ())
       | NONE   => (print "\n"; ())
+   end
+
+   fun init stm =
+   let
+      val ls = map (fn x => (NONE, x)) stm
+      fun exec () = interp (ls, [], [], [], StrMap.empty)
+      handle
+           BasicExn.Syntax msg         => (
+               prErr ("SYNTAX ERROR: " ^ msg);
+               ([], [], [], StrMap.empty) )
+         | BasicExn.Runtime (msg, ln)  => (
+               prErr ("ERROR: " ^ msg ^
+                     (case ln of SOME n => " in line " ^ (Int.toString n) | NONE => ""));
+               ([], [], [], StrMap.empty) )
+   in
+      loop (exec ()) handle BasicExn.Quit => ()
    end
 
 end

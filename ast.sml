@@ -30,7 +30,7 @@ struct
       | LOAD of string
       | SAVE of string
       | LIST
-      | RUN
+      | RUN of string option
       | END
       | REM of string
       | TICK of string
@@ -106,7 +106,8 @@ struct
          | REM s        => "REM" ^ s
          | TICK s       => "'" ^ s
          | LIST         => "LIST"
-         | RUN          => "RUN"
+         | RUN f        => "RUN" ^
+                           (case f of SOME s => " " ^ toString (STRING s) | NONE => "")
          | BYE          => "BYE"
          | RENUM (m, n) => "RENUM " ^ Int.toString m ^ ", " ^ Int.toString n
          | COMP ls      => prCompound (ls, "")
