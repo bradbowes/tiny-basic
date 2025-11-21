@@ -1,39 +1,36 @@
 structure Prog =
 struct
-   fun insert (prog, (ln, stm)) =
-   let
+   fun insert (prog, (ln, stm)) = let
       fun loop (acc, rest) = case rest of
            []           => List.revAppend (acc, [(ln, stm)])
-         | (l, s)::xs   =>
-               if l > ln then List.revAppend (acc, (ln, stm)::rest)
-               else if l = ln then List.revAppend (acc, (ln, stm)::xs)
-               else loop ((l, s)::acc, xs)
+         | (l, s) :: xs =>
+               if l > ln then List.revAppend (acc, (ln, stm) :: rest)
+               else if l = ln then List.revAppend (acc, (ln, stm) :: xs)
+               else loop ((l, s) :: acc, xs)
    in loop ([], prog) end
 
-   fun delete (prog, ln) =
-   let
+   fun delete (prog, ln) = let
       fun loop (acc, rest) = case rest of
            []           => prog
-         | (l, s)::xs   =>
+         | (l, s) :: xs =>
                if l > ln then prog
                else if l = ln then List.revAppend (acc, xs)
-               else loop ((l, s)::acc, xs)
+               else loop ((l, s) :: acc, xs)
    in loop ([], prog) end
 
    fun getCode prog = map (fn (l, stm) => (SOME l, stm)) prog
 
    fun getContinuation (rest, ln) = case rest of
         []           => raise BasicExn.NoLine
-      | (l, _)::xs   =>
+      | (l, _) :: xs =>
             if l > ln then raise BasicExn.NoLine
             else if l = ln then getCode rest
             else getContinuation (xs, ln)
 
-   fun renum (prog, start, inc) =
-   let
+   fun renum (prog, start, inc) = let
       fun mapLines (map, rest, n) = case rest of
            []           => map
-         | (l, _)::xs   => mapLines (NumMap.insert (map, l, n), xs, n + inc)
+         | (l, _) :: xs => mapLines (NumMap.insert (map, l, n), xs, n + inc)
 
       val lines = mapLines (NumMap.empty, prog, start)
 
@@ -49,7 +46,7 @@ struct
 
       fun loop (acc, rest, n) = case rest of
            []           => List.rev acc
-         | (_, s)::xs   => loop ((n, (fix s))::acc, xs, n + inc)
+         | (_, s) :: xs => loop ((n, (fix s)) :: acc, xs, n + inc)
 
    in loop ([], prog, start) end
 

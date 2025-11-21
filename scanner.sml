@@ -3,23 +3,21 @@ structure Scanner : sig
 end =
 struct
    open Token
-   fun scanner s =
-   let
+   fun scanner s = let
       val sz = size s
 
       fun getChar pos =
       if pos >= sz then #"\^D" else String.sub (s, pos)
 
-      fun skipWhite pos =
-      let val ch = getChar pos
+      fun skipWhite pos = let
+         val ch = getChar pos
       in
          if ch = #" " orelse ch = #"\t"
          then skipWhite (pos + 1)
          else (ch, pos)
       end
 
-      fun getNumber pos =
-      let
+      fun getNumber pos = let
          fun loop (n, pos) =
          let val ch = getChar pos
          in
@@ -29,65 +27,60 @@ struct
          end
       in loop (0, pos) end
 
-      fun getVar (ls, pos) =
-      let val ch = Char.toUpper (getChar pos)
+      fun getVar (ls, pos) = let
+         val ch = Char.toUpper (getChar pos)
       in
          if Char.isAlphaNum ch
          then getVar (ch :: ls, pos + 1)
          else (VAR (String.implode (List.rev ls)), pos)
       end
 
-      fun getKeyword (tok, kw1, kw2, pos) =
-      let
+      fun getKeyword (tok, kw1, kw2, pos) = let
          fun loop (acc, rest, pos) =
          let val ch = Char.toUpper (getChar pos)
          in case rest of
-              []    => if Char.isAlphaNum ch
-                       then getVar (acc, pos)
-                       else (tok, pos)
-            | c::cs => if ch = c
-                       then loop (c::acc, cs, pos + 1)
-                       else getVar (acc, pos)
+              []        => if Char.isAlphaNum ch
+                           then getVar (acc, pos)
+                           else (tok, pos)
+            | c :: cs   => if ch = c
+                           then loop (c :: acc, cs, pos + 1)
+                           else getVar (acc, pos)
          end
       in
          loop (List.rev (String.explode kw1), String.explode kw2, pos)
       end
 
-      fun getString pos =
-      let
-         fun loop (ls, p) =
-         let val ch = getChar p
+      fun getString pos = let
+         fun loop (ls, p) = let
+            val ch = getChar p
          in
             if ch = #"\"" then
                let val ch = getChar (p + 1)
                in
                   if ch = #"\""
-                  then loop (ch::ls, p + 2)
+                  then loop (ch :: ls, p + 2)
                   else (STRING (String.implode (List.rev ls)), p + 1)
                end
             else if Char.contains "\n\r\^D" ch
             then (STRING (String.implode (List.rev ls)), p + 1)
-            else loop (ch::ls, p + 1)
+            else loop (ch :: ls, p + 1)
          end
       in loop ([], pos) end
 
-      fun getComment (tok, pos) =
-      let
-         fun loop (ls, p) =
-         let
+      fun getComment (tok, pos) = let
+         fun loop (ls, p) = let
             val ch = getChar p
             fun ret () = (tok (String.implode (List.rev ls)), p)
          in case (ch) of
               #"\n"  => ret ()
             | #"\r"  => ret ()
             | #"\^D" => ret ()
-            | _      => loop (ch::ls, p + 1)
+            | _      => loop (ch :: ls, p + 1)
          end
       in loop ([], pos) end
 
    in
-      fn pos =>
-      let
+      fn pos => let
          val (ch, p) = skipWhite pos
          fun look n = Char.toUpper (getChar (p + n))
       in case Char.toUpper ch of

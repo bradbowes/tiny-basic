@@ -23,13 +23,12 @@ struct
 
    val empty = LEAF
 
-   fun insert (tbl, key, value) =
-   let
+   fun insert (tbl, key, value) = let
       fun height LEAF = 0
         | height (NODE (_, _, _, h)) = h
 
       fun newNode (l, v, r) =
-         NODE (l, v, r, Int.max(height l, height r) + 1)
+         NODE (l, v, r, Int.max (height l, height r) + 1)
 
       fun getBalance LEAF = 0
         | getBalance (NODE (l, _, r, _)) = height l - height r
@@ -48,12 +47,11 @@ struct
       val t = case tbl of
          LEAF => NODE (LEAF, (key, value), LEAF, 1)
        | NODE (l, (k, v), r, h) =>
-            if Key.lt (key, k) then
-               newNode (insert (l, key, value), (k, v), r)
-            else if Key.lt (k, key) then
-               newNode (l, (k, v), insert (r, key, value))
-            else
-               newNode (l, (key, value), r)
+            if Key.lt (key, k)
+            then newNode (insert (l, key, value), (k, v), r)
+            else if Key.lt (k, key)
+            then newNode (l, (k, v), insert (r, key, value))
+            else newNode (l, (key, value), r)
 
       val balance = getBalance t
    in case t of
@@ -72,20 +70,16 @@ struct
                   else if Key.lt (key, k) then rotateLeft (NODE (l, v, rotateRight r, h))
                   else t
                end
-            else
-               t
+            else t
       | _ => raise (BasicExn.Bug "insert")
    end
 
    fun lookup (tbl, key) = case tbl of
          LEAF => NONE
        | NODE (l, (k, v), r, _) =>
-            if Key.lt (key, k) then
-               lookup (l, key)
-            else if Key.lt (k, key) then
-               lookup (r, key)
-            else
-               SOME v
+            if Key.lt (key, k) then lookup (l, key)
+            else if Key.lt (k, key) then lookup (r, key)
+            else SOME v
 end
 
 structure Str :> SORTABLE where type t = string =
