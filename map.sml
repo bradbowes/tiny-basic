@@ -93,7 +93,7 @@ structure StrMap = MapFun (structure K = Str)
 structure Num :> SORTABLE where type t = int =
 struct
    type t = int
-   val lt = op<
+   val lt = op <
 end
 
 structure NumMap = MapFun (structure K = Num)

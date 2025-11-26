@@ -79,8 +79,8 @@ struct
          | NEG n        => "-" ^ toString n
          | ADD (x, y)   => toString x ^ " + " ^ toString y
          | SUB (x, y)   => toString x ^ " - " ^ toString y
-         | MUL (x, y)   => group x ^ " * " ^ group y
-         | DIV (x, y)   => group x ^ " / " ^ group y
+         | MUL (x, y)   => group x ^ "*" ^ group y
+         | DIV (x, y)   => group x ^ "/" ^ group y
          | EQ (x, y)    => toString x ^ " = " ^ toString y
          | NE (x, y)    => toString x ^ " <> " ^ toString y
          | GT (x, y)    => toString x ^ " > " ^ toString y
