@@ -40,6 +40,7 @@ struct
       | BYE
       | RENUM of int * int
       | COMP of node list
+      | ERR of string * string
 
    fun toString a =
    let
@@ -52,6 +53,27 @@ struct
          "\"" ^
          (String.translate (fn c => if c = #"\"" then "\"\"" else str c) s) ^
          "\""
+
+      fun ltrim s = let
+         fun loop p = let
+            val ch = String.sub (s, p)
+         in
+            if ch = #" " orelse ch = #"\t"
+            then loop (p + 1)
+            else String.extract (s, p, NONE)
+         end
+      in loop 0 end
+
+      fun rtrim s = let
+         fun loop p = let
+            val ch = String.sub (s, p)
+         in
+            if ch = #" " orelse ch = #"\t" orelse ch = #"\r" orelse ch = #"\n"
+            then loop (p - 1)
+            else String.substring (s, 0, p + 1)
+         end
+      in loop (size s - 1) end
+
 
       fun prItems (ls, s) = case ls of
            []              => s
@@ -111,6 +133,7 @@ struct
          | BYE          => "BYE"
          | RENUM (m, n) => "RENUM " ^ Int.toString m ^ ", " ^ Int.toString n
          | COMP ls      => prCompound (ls, "")
+         | ERR (s, _)   => ltrim (rtrim s)
          | _            => ""
    end
 end

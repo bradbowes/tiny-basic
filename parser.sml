@@ -176,7 +176,7 @@ struct
          | Token.GO        => let val (t, c) = scan c in case t of
                                    Token.TO  => getGoStm Ast.GOTO (scan c)
                                  | Token.SUB => getGoStm Ast.GOSUB (scan c)
-                                 | _         => raise (BasicExn.Syntax "expected GOTO or GOSUB")
+                                 | _         => raise (BasicExn.Syntax "missing GOTO or GOSUB")
                               end
          | Token.GOTO      => getGoStm Ast.GOTO (scan c)
          | Token.GOSUB     => getGoStm Ast.GOSUB (scan c)
@@ -197,7 +197,7 @@ struct
          | Token.RUN       => getRunCmd c
          | Token.BYE       => (Ast.BYE, c)
          | Token.RENUM     => getRenumCmd c
-         | _               => raise (BasicExn.Syntax "expected statement")
+         | _               => raise (BasicExn.Syntax "missing command")
 
       and getCompoundStm tk = let
          fun loop (ls, tk) = let
@@ -226,8 +226,9 @@ struct
            Token.NUM (n) => let
                   val (s, _) = getCompoundStm (scan c)
                   handle
-                     BasicExn.Syntax msg => raise
-                        (BasicExn.Syntax (msg ^ " in line " ^ Int.toString n))
+                     BasicExn.Syntax msg => (
+                        prErr ("SYNTAX ERROR: " ^ msg ^ " in line " ^ Int.toString n);
+                        (Ast.ERR (String.extract (line, c, NONE), msg), size line) )
                in case s of
                     Ast.NUL   => Ast.DEL n
                   | _         => Ast.LINE (n, s)

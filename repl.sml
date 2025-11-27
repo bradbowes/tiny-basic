@@ -187,6 +187,7 @@ struct
             | SAVE file       => let val out = TextIO.openOut file
                                  in list out; TextIO.closeOut out; (tl c, gs, fs, p, e) end
             | BYE             => raise BasicExn.Quit
+            | ERR (_, msg)    => raise (BasicExn.Syntax msg)
             | _               => (tl c, gs, fs, p, e)
          )
 
@@ -205,7 +206,8 @@ struct
                                           "Interactive command in run mode", line))
             | BasicExn.Direct       => raise (BasicExn.Runtime (
                                           "Direct command in program text", line))
-            | BasicExn.Syntax msg   => raise (BasicExn.Syntax msg)
+            | BasicExn.Syntax msg   => raise (BasicExn.Runtime (
+                                          msg, line))
             | BasicExn.Quit         => raise BasicExn.Quit
             | x                     => raise (BasicExn.Runtime (exnMessage x, line))
 
