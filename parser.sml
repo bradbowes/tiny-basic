@@ -144,16 +144,16 @@ struct
          end
       in loop ([getVar t], c) end
 
-      fun getOptPair cmd c = let
+      fun getOptPair (cmd, sep, c) = let
          val (t, c') = scan c
          val (opt1, c) = case t of
               Token.NUM n  => (SOME n, c')
             | _            => (NONE, c)
          val (t, c') = scan c
-         val (opt2, c) = case t of
-              Token.COMMA  => let val (t, c) = scan c'
+         val (opt2, c) = if t = sep
+                         then let val (t, c) = scan c'
                               in case t of Token.NUM n => (SOME n, c) | _ => (NONE, c') end
-            | _            => (NONE, c)
+                         else (NONE, c)
       in (cmd (opt1, opt2), c) end
 
       fun getRunCmd c = let
@@ -188,10 +188,10 @@ struct
          | Token.NEXT      => getNextStm (t, c)
          | Token.REM s     => (Ast.REM s, c)
          | Token.TICK s    => (Ast.TICK s, c)
-         | Token.LIST      => getOptPair Ast.LIST c
+         | Token.LIST      => getOptPair (Ast.LIST, Token.MINUS, c)
          | Token.RUN       => getRunCmd c
          | Token.BYE       => (Ast.BYE, c)
-         | Token.RENUM     => getOptPair Ast.RENUM c
+         | Token.RENUM     => getOptPair (Ast.RENUM, Token.COMMA, c)
          | _               => raise (BasicExn.Syntax "missing command")
 
       and getCompoundStm tk = let

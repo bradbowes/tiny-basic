@@ -93,10 +93,10 @@ struct
            SOME s => toString (STRING s) ^ ", "
          | NONE   => ""
 
-      fun optPair (m, n) = case (m, n) of
+      fun optPair (m, n, sep) = case (m, n) of
            (NONE, NONE)       => ""
          | (SOME m, NONE)     => Int.toString m
-         | (SOME m, SOME n)   => Int.toString m ^ ", " ^ Int.toString n
+         | (SOME m, SOME n)   => Int.toString m ^ sep ^ Int.toString n
          | (NONE, SOME n)     => ", " ^ Int.toString n
 
    in
@@ -138,8 +138,8 @@ struct
          | NEW          => "NEW"
          | LOAD s       => "LOAD " ^ bstr s
          | SAVE s       => "SAVE " ^ bstr s
-         | LIST (x, y)  => "LIST " ^ optPair (x, y)
-         | RENUM (x, y) => "RENUM " ^ optPair (x, y)
+         | LIST (x, y)  => "LIST " ^ optPair (x, y, "-")
+         | RENUM (x, y) => "RENUM " ^ optPair (x, y, ", ")
          | _            => ""
    end
 end
