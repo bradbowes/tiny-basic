@@ -1,5 +1,7 @@
 structure Prog =
 struct
+   val lineErr = "Undefined line number"
+
    fun insert (prog, (ln, stm)) = let
       fun loop (acc, rest) = case rest of
            []           => List.revAppend (acc, [(ln, stm)])
@@ -21,18 +23,24 @@ struct
    fun getCode prog = map (fn (l, stm) => (SOME l, stm)) prog
 
    fun getContinuation (rest, ln) = case rest of
-        []           => raise BasicExn.NoLine
+        []           => raise (BasicExn.Runtime lineErr)
       | (l, _) :: xs =>
-            if l > ln then raise BasicExn.NoLine
+            if l > ln then raise (BasicExn.Runtime lineErr)
             else if l = ln then getCode rest
             else getContinuation (xs, ln)
 
    fun renum (prog, start, inc) = let
+      val start'  = getOpt (start, 100)
+      val inc'    = getOpt (inc, 10)
+      val _       = if inc' < 1
+                    then raise (BasicExn.Runtime "Illegal renum increment")
+                    else ()
+
       fun mapLines (map, rest, n) = case rest of
            []           => map
-         | (l, _) :: xs => mapLines (NumMap.insert (map, l, n), xs, n + inc)
+         | (l, _) :: xs => mapLines (NumMap.insert (map, l, n), xs, n + inc')
 
-      val lines = mapLines (NumMap.empty, prog, start)
+      val lines = mapLines (NumMap.empty, prog, start')
 
       fun newTarget n =
          getOpt (NumMap.lookup (lines, n), n)
@@ -46,8 +54,8 @@ struct
 
       fun loop (acc, rest, n) = case rest of
            []           => List.rev acc
-         | (_, s) :: xs => loop ((n, (fix s)) :: acc, xs, n + inc)
+         | (_, s) :: xs => loop ((n, (fix s)) :: acc, xs, n + inc')
 
-   in loop ([], prog, start) end
+   in loop ([], prog, start') end
 
 end

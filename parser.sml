@@ -144,7 +144,7 @@ struct
          end
       in loop ([getVar t], c) end
 
-      fun getListCmd c = let
+      fun getOptPair cmd c = let
          val (t, c') = scan c
       in case t of
            Token.NUM m  => let
@@ -155,10 +155,10 @@ struct
                      | _           => (Token.EOL, c')
                in
                   case t of
-                       Token.NUM n  => (Ast.LIST (SOME m, SOME n), c)
-                     | _            => (Ast.LIST (SOME m, NONE), c')
+                       Token.NUM n  => (cmd (SOME m, SOME n), c)
+                     | _            => (cmd (SOME m, NONE), c')
                end
-         | _            => (Ast.LIST (NONE, NONE), c)
+         | _            => (cmd (NONE, NONE), c)
       end
 
 
@@ -173,10 +173,10 @@ struct
                      | _           => (Token.EOL, c')
                in
                   case t of
-                       Token.NUM n  => (Ast.RENUM (m, n), c)
-                     | _            => (Ast.RENUM (m, 10), c')
+                       Token.NUM n  => (Ast.RENUM (SOME m, SOME n), c)
+                     | _            => (Ast.RENUM (SOME m, NONE), c')
                end
-         | _            => (Ast.RENUM (100, 10), c)
+         | _            => (Ast.RENUM (NONE, NONE), c)
       end
 
       fun getRunCmd c = let
@@ -211,7 +211,7 @@ struct
          | Token.NEXT      => getNextStm (t, c)
          | Token.REM s     => (Ast.REM s, c)
          | Token.TICK s    => (Ast.TICK s, c)
-         | Token.LIST      => getListCmd c
+         | Token.LIST      => getOptPair Ast.LIST c
          | Token.RUN       => getRunCmd c
          | Token.BYE       => (Ast.BYE, c)
          | Token.RENUM     => getRenumCmd c

@@ -38,7 +38,7 @@ struct
       | DEL of int
       | NUL
       | BYE
-      | RENUM of int * int
+      | RENUM of int option * int option
       | COMP of node list
       | ERR of string * string
 
@@ -93,6 +93,12 @@ struct
            SOME s => toString (STRING s) ^ ", "
          | NONE   => ""
 
+      fun optPair (m, n) = case (m, n) of
+           (NONE, NONE)       => ""
+         | (SOME m, NONE)     => Int.toString m
+         | (SOME m, SOME n)   => Int.toString m ^ ", " ^ Int.toString n
+         | (NONE, SOME n)     => ", " ^ Int.toString n
+
    in
       case a of
            NUM n        => Int.toString n
@@ -129,6 +135,11 @@ struct
          | BYE          => "BYE"
          | COMP ls      => prCompound (ls, "")
          | ERR (s, _)   => ltrim (rtrim s)
+         | NEW          => "NEW"
+         | LOAD s       => "LOAD " ^ bstr s
+         | SAVE s       => "SAVE " ^ bstr s
+         | LIST (x, y)  => "LIST " ^ optPair (x, y)
+         | RENUM (x, y) => "RENUM " ^ optPair (x, y)
          | _            => ""
    end
 end
