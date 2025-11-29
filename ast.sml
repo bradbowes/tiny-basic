@@ -29,7 +29,7 @@ struct
       | NEW
       | LOAD of string
       | SAVE of string
-      | LIST
+      | LIST of int option * int option
       | RUN of string option
       | END
       | REM of string
@@ -101,8 +101,8 @@ struct
          | NEG n        => "-" ^ toString n
          | ADD (x, y)   => toString x ^ " + " ^ toString y
          | SUB (x, y)   => toString x ^ " - " ^ toString y
-         | MUL (x, y)   => group x ^ "*" ^ group y
-         | DIV (x, y)   => group x ^ "/" ^ group y
+         | MUL (x, y)   => group x ^ " * " ^ group y
+         | DIV (x, y)   => group x ^ " / " ^ group y
          | EQ (x, y)    => toString x ^ " = " ^ toString y
          | NE (x, y)    => toString x ^ " <> " ^ toString y
          | GT (x, y)    => toString x ^ " > " ^ toString y
@@ -121,17 +121,12 @@ struct
                            (case z of SOME e => " STEP " ^ toString e | NONE => "")
          | NEXT x       => "NEXT " ^ getOpt (x, "")
          | CLEAR        => "CLEAR"
-         | NEW          => "NEW"
-         | LOAD s       => "LOAD " ^ bstr s
-         | SAVE s       => "SAVE " ^ bstr s
          | END          => "END"
          | REM s        => "REM" ^ s
          | TICK s       => "'" ^ s
-         | LIST         => "LIST"
          | RUN f        => "RUN" ^
                            (case f of SOME s => " " ^ toString (STRING s) | NONE => "")
          | BYE          => "BYE"
-         | RENUM (m, n) => "RENUM " ^ Int.toString m ^ ", " ^ Int.toString n
          | COMP ls      => prCompound (ls, "")
          | ERR (s, _)   => ltrim (rtrim s)
          | _            => ""

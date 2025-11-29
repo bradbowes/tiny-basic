@@ -144,6 +144,24 @@ struct
          end
       in loop ([getVar t], c) end
 
+      fun getListCmd c = let
+         val (t, c') = scan c
+      in case t of
+           Token.NUM m  => let
+                  val (t, c) = scan c'
+                  val (t, c) = case t of
+                       Token.COMMA => scan c
+                     | Token.NUM _ => (t, c)
+                     | _           => (Token.EOL, c')
+               in
+                  case t of
+                       Token.NUM n  => (Ast.LIST (SOME m, SOME n), c)
+                     | _            => (Ast.LIST (SOME m, NONE), c')
+               end
+         | _            => (Ast.LIST (NONE, NONE), c)
+      end
+
+
       fun getRenumCmd c = let
          val (t, c') = scan c
       in case t of
@@ -193,7 +211,7 @@ struct
          | Token.NEXT      => getNextStm (t, c)
          | Token.REM s     => (Ast.REM s, c)
          | Token.TICK s    => (Ast.TICK s, c)
-         | Token.LIST      => (Ast.LIST, c)
+         | Token.LIST      => getListCmd c
          | Token.RUN       => getRunCmd c
          | Token.BYE       => (Ast.BYE, c)
          | Token.RENUM     => getRenumCmd c

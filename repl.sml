@@ -49,10 +49,15 @@ struct
 
       in print (prItems (ls, "")) end
 
-      fun list out = let
+      fun list (start, finish, out) = let
+         val section = case (start, finish) of
+              (NONE, NONE)       => p
+            | (SOME n, NONE)     => List.filter (fn (l, _) => l = n) p
+            | (SOME m, SOME n)   => List.filter (fn (l, _) => l >= m andalso l <= n) p
+            | _                  => []
          fun outputLine (line, stm) =
             TextIO.output (out, Int.toString line ^ " " ^ toString stm ^ "\r\n")
-      in app outputLine p end
+      in app outputLine section end
 
       fun input (prompt, vars) = let
          val msg = let
@@ -158,7 +163,7 @@ struct
                            | LOAD _    => raise BasicExn.Mode
                            | RENUM _   => raise BasicExn.Mode
                            | SAVE _    => raise BasicExn.Mode
-                           | LIST      => raise BasicExn.Mode
+                           | LIST _    => raise BasicExn.Mode
                            | _         => () )
             | NONE => ()
             ;
@@ -183,9 +188,13 @@ struct
             | FOR x           => execFor x
             | NEXT x          => execNext x
             | PRINT ls        => (pr ls; (tl c, gs, fs, p, e))
-            | LIST            => (list TextIO.stdOut; (tl c, gs, fs, p, e))
+            | LIST (x, y)     => (list (x, y, TextIO.stdOut); (tl c, gs, fs, p, e))
             | SAVE file       => let val out = TextIO.openOut file
-                                 in list out; TextIO.closeOut out; (tl c, gs, fs, p, e) end
+                                 in
+                                    list (NONE, NONE, out);
+                                    TextIO.closeOut out;
+                                    (tl c, gs, fs, p, e)
+                                 end
             | BYE             => raise BasicExn.Quit
             | ERR (_, msg)    => raise (BasicExn.Syntax msg)
             | _               => (tl c, gs, fs, p, e)
