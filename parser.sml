@@ -146,38 +146,15 @@ struct
 
       fun getOptPair cmd c = let
          val (t, c') = scan c
-      in case t of
-           Token.NUM m  => let
-                  val (t, c) = scan c'
-                  val (t, c) = case t of
-                       Token.COMMA => scan c
-                     | Token.NUM _ => (t, c)
-                     | _           => (Token.EOL, c')
-               in
-                  case t of
-                       Token.NUM n  => (cmd (SOME m, SOME n), c)
-                     | _            => (cmd (SOME m, NONE), c')
-               end
-         | _            => (cmd (NONE, NONE), c)
-      end
-
-
-      fun getRenumCmd c = let
+         val (opt1, c) = case t of
+              Token.NUM n  => (SOME n, c')
+            | _            => (NONE, c)
          val (t, c') = scan c
-      in case t of
-           Token.NUM m  => let
-                  val (t, c) = scan c'
-                  val (t, c) = case t of
-                       Token.COMMA => scan c
-                     | Token.NUM _ => (t, c)
-                     | _           => (Token.EOL, c')
-               in
-                  case t of
-                       Token.NUM n  => (Ast.RENUM (SOME m, SOME n), c)
-                     | _            => (Ast.RENUM (SOME m, NONE), c')
-               end
-         | _            => (Ast.RENUM (NONE, NONE), c)
-      end
+         val (opt2, c) = case t of
+              Token.COMMA  => let val (t, c) = scan c'
+                              in case t of Token.NUM n => (SOME n, c) | _ => (NONE, c') end
+            | _            => (NONE, c)
+      in (cmd (opt1, opt2), c) end
 
       fun getRunCmd c = let
          val (t, c') = scan c
@@ -214,7 +191,7 @@ struct
          | Token.LIST      => getOptPair Ast.LIST c
          | Token.RUN       => getRunCmd c
          | Token.BYE       => (Ast.BYE, c)
-         | Token.RENUM     => getRenumCmd c
+         | Token.RENUM     => getOptPair Ast.RENUM c
          | _               => raise (BasicExn.Syntax "missing command")
 
       and getCompoundStm tk = let

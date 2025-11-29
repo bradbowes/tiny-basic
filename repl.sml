@@ -50,14 +50,16 @@ struct
       in print (prItems (ls, "")) end
 
       fun list (start, finish, out) = let
-         val section = case (start, finish) of
-              (NONE, NONE)       => p
-            | (SOME n, NONE)     => List.filter (fn (l, _) => l = n) p
-            | (SOME m, SOME n)   => List.filter (fn (l, _) => l >= m andalso l <= n) p
-            | _                  => []
+         val test = case (start, finish) of
+              (NONE, NONE)       => (fn (l, _) => true)
+            | (SOME m, NONE)     => (fn (l, _) => l >= m)
+            | (SOME m, SOME n)   => (fn (l, _) => l >= m andalso l <= n)
+            | (NONE, SOME n)     => (fn (l, _) => l <= n)
+
          fun outputLine (line, stm) =
             TextIO.output (out, Int.toString line ^ " " ^ toString stm ^ "\r\n")
-      in app outputLine section end
+
+      in app outputLine (List.filter test p) end
 
       fun input (prompt, vars) = let
          val msg = let
